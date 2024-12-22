@@ -1,0 +1,194 @@
+# Kibana Deployment for AI-SMS Lead Platform
+# Version: 8.9.0
+# Dependencies:
+# - kubernetes v1.27
+# - kibana 8.9.0
+# - elasticsearch 8.9.0
+
+---
+# ConfigMap for Kibana configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kibana-config
+  namespace: logging
+  labels:
+    app: kibana
+    component: logging
+data:
+  kibana.yml: |
+    server.name: "ai-sms-kibana"
+    server.host: "0.0.0.0"
+    server.publicBaseUrl: "https://kibana.ai-sms-platform.com"
+    
+    # Security settings
+    server.ssl.enabled: true
+    server.ssl.certificate: "/usr/share/kibana/config/certs/tls.crt"
+    server.ssl.key: "/usr/share/kibana/config/certs/tls.key"
+    
+    # Elasticsearch connection
+    elasticsearch.hosts: ["https://elasticsearch.logging.svc.cluster.local:9200"]
+    elasticsearch.ssl.certificateAuthorities: ["/usr/share/kibana/config/certs/ca.crt"]
+    elasticsearch.ssl.verificationMode: "certificate"
+    
+    # Security features
+    xpack.security.enabled: true
+    xpack.encryptedSavedObjects.enabled: true
+    
+    # Monitoring
+    xpack.monitoring.enabled: true
+    xpack.monitoring.ui.container.elasticsearch.enabled: true
+    
+    # Reporting
+    xpack.reporting.enabled: true
+    xpack.reporting.capture.browser.chromium.disableSandbox: false
+    
+    # CORS and security headers
+    server.cors.enabled: true
+    server.cors.allowCredentials: false
+    server.cors.allowOrigin: ["https://*.ai-sms-platform.com"]
+    
+    # Telemetry
+    telemetry.enabled: false
+
+---
+# Deployment for Kibana
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: logging
+  labels:
+    app: kibana
+    component: logging
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+        component: logging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5601"
+        checksum/config: "${KIBANA_CONFIG_CHECKSUM}"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: kibana
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsNonRoot: true
+      containers:
+        - name: kibana
+          image: docker.elastic.co/kibana/kibana:8.9.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5601
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          env:
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=1024"
+            - name: ELASTICSEARCH_HOSTS
+              value: "https://elasticsearch.logging.svc.cluster.local:9200"
+            - name: SERVER_NAME
+              value: "ai-sms-kibana"
+            - name: XPACK_SECURITY_ENABLED
+              value: "true"
+            - name: XPACK_MONITORING_ENABLED
+              value: "true"
+            - name: XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY
+              valueFrom:
+                secretKeyRef:
+                  name: kibana-secrets
+                  key: encryptionKey
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: 5601
+              scheme: HTTPS
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: 5601
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: kibana-config
+              mountPath: /usr/share/kibana/config/kibana.yml
+              subPath: kibana.yml
+            - name: kibana-certs
+              mountPath: /usr/share/kibana/config/certs
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: kibana-config
+          configMap:
+            name: kibana-config
+        - name: kibana-certs
+          secret:
+            secretName: kibana-certs
+        - name: tmp
+          emptyDir: {}
+
+---
+# Service for Kibana
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: logging
+  labels:
+    app: kibana
+    component: logging
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5601
+      targetPort: 5601
+      protocol: TCP
+      name: https
+  selector:
+    app: kibana
+
+---
+# PodDisruptionBudget for Kibana
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kibana-pdb
+  namespace: logging
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: kibana
