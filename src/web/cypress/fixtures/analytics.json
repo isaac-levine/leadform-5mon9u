@@ -1,0 +1,194 @@
+{
+  "overview": {
+    "responseTime": {
+      "type": "RESPONSE_TIME",
+      "values": [
+        {
+          "value": 450,
+          "timestamp": "2024-01-01T00:00:00Z"
+        },
+        {
+          "value": 480,
+          "timestamp": "2024-01-01T01:00:00Z"
+        },
+        {
+          "value": 420,
+          "timestamp": "2024-01-01T02:00:00Z"
+        },
+        {
+          "value": 495,
+          "timestamp": "2024-01-01T03:00:00Z"
+        },
+        {
+          "value": 460,
+          "timestamp": "2024-01-01T04:00:00Z"
+        }
+      ],
+      "timeRange": "HOUR",
+      "target": 500,
+      "trend": "stable"
+    },
+    "leadEngagement": {
+      "type": "LEAD_ENGAGEMENT", 
+      "values": [
+        {
+          "value": 82,
+          "timestamp": "2024-01-01T00:00:00Z"
+        },
+        {
+          "value": 85,
+          "timestamp": "2024-01-01T01:00:00Z"
+        },
+        {
+          "value": 88,
+          "timestamp": "2024-01-01T02:00:00Z"
+        },
+        {
+          "value": 87,
+          "timestamp": "2024-01-01T03:00:00Z"
+        },
+        {
+          "value": 89,
+          "timestamp": "2024-01-01T04:00:00Z"
+        }
+      ],
+      "timeRange": "HOUR",
+      "target": 80,
+      "trend": "improving"
+    },
+    "conversionRate": {
+      "type": "CONVERSION_RATE",
+      "values": [
+        {
+          "value": 25,
+          "timestamp": "2024-01-01T00:00:00Z"
+        },
+        {
+          "value": 27,
+          "timestamp": "2024-01-01T01:00:00Z"
+        },
+        {
+          "value": 28,
+          "timestamp": "2024-01-01T02:00:00Z"
+        },
+        {
+          "value": 29,
+          "timestamp": "2024-01-01T03:00:00Z"
+        },
+        {
+          "value": 31,
+          "timestamp": "2024-01-01T04:00:00Z"
+        }
+      ],
+      "timeRange": "HOUR",
+      "target": 25,
+      "trend": "improving"
+    },
+    "aiConfidence": {
+      "type": "AI_CONFIDENCE",
+      "values": [
+        {
+          "value": 92,
+          "timestamp": "2024-01-01T00:00:00Z"
+        },
+        {
+          "value": 94,
+          "timestamp": "2024-01-01T01:00:00Z"
+        },
+        {
+          "value": 93,
+          "timestamp": "2024-01-01T02:00:00Z"
+        },
+        {
+          "value": 95,
+          "timestamp": "2024-01-01T03:00:00Z"
+        },
+        {
+          "value": 94,
+          "timestamp": "2024-01-01T04:00:00Z"
+        }
+      ],
+      "timeRange": "HOUR",
+      "target": 90,
+      "trend": "stable"
+    },
+    "leadQuality": {
+      "type": "LEAD_QUALITY",
+      "values": [
+        {
+          "value": 85,
+          "timestamp": "2024-01-01T00:00:00Z"
+        },
+        {
+          "value": 87,
+          "timestamp": "2024-01-01T01:00:00Z"
+        },
+        {
+          "value": 86,
+          "timestamp": "2024-01-01T02:00:00Z"
+        },
+        {
+          "value": 88,
+          "timestamp": "2024-01-01T03:00:00Z"
+        },
+        {
+          "value": 89,
+          "timestamp": "2024-01-01T04:00:00Z"
+        }
+      ],
+      "timeRange": "HOUR",
+      "target": 85,
+      "trend": "improving"
+    }
+  },
+  "timeRange": "HOUR",
+  "loading": false,
+  "error": null,
+  "lastUpdated": "2024-01-01T04:00:00Z",
+  "testScenarios": {
+    "displayMetricsOverview": {
+      "name": "Display Metrics Overview",
+      "description": "Test data for verifying metrics overview component display and target achievements",
+      "expectedResults": [
+        "Response time consistently below 500ms target",
+        "Lead engagement maintaining above 80% target",
+        "Conversion rate exceeding 25% improvement target",
+        "AI confidence stable above 90% target",
+        "Lead quality scores trending above 85% target"
+      ]
+    },
+    "trendCalculations": {
+      "name": "Trend Calculations",
+      "description": "Data points for testing metric trend calculations and visualizations",
+      "expectedResults": [
+        "Positive trend in lead engagement over time",
+        "Stable trend in response time metrics",
+        "Improving trend in conversion rates",
+        "Consistent AI confidence levels",
+        "Upward trend in lead quality scores"
+      ]
+    },
+    "edgeCases": {
+      "name": "Edge Cases",
+      "description": "Test scenarios for boundary conditions and edge cases",
+      "expectedResults": [
+        "Handle response times approaching 500ms limit",
+        "Process engagement rates at minimum 80% threshold",
+        "Manage conversion spikes above 30%",
+        "Handle AI confidence fluctuations",
+        "Process lead quality variations"
+      ]
+    },
+    "timeRangeTransitions": {
+      "name": "Time Range Transitions",
+      "description": "Test data for different time range displays",
+      "expectedResults": [
+        "Smooth transition between hourly views",
+        "Accurate daily aggregations",
+        "Correct weekly trend calculations",
+        "Proper handling of time zone conversions",
+        "Consistent timestamp formatting"
+      ]
+    }
+  }
+}
