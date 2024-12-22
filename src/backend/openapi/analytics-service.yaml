@@ -1,0 +1,304 @@
+openapi: 3.0.3
+info:
+  title: Analytics Service API
+  version: 1.0.0
+  description: |
+    API for comprehensive analytics tracking and reporting in the AI-SMS Lead Platform.
+    Provides endpoints for retrieving metrics, aggregations, and detailed analytics data
+    with support for filtering, pagination, and sorting.
+
+servers:
+  - url: /api/v1
+    description: Version 1 of the Analytics API
+
+paths:
+  /metrics/overview:
+    get:
+      summary: Get analytics overview
+      description: |
+        Retrieves comprehensive analytics overview including response time, lead engagement,
+        conversion rates, AI confidence, lead quality, system uptime, and user adoption metrics.
+      operationId: getAnalyticsOverview
+      parameters:
+        - name: timeRange
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/TimeRange'
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: metricTypes
+          in: query
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/MetricType'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [timestamp, value, confidence]
+            default: timestamp
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Analytics overview retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsOverview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+
+  /metrics/{metricType}:
+    get:
+      summary: Get specific metric data
+      description: Retrieves detailed data for a specific metric type with filtering and aggregation options
+      operationId: getMetricData
+      parameters:
+        - name: metricType
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/MetricType'
+        - name: timeRange
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/TimeRange'
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: confidenceThreshold
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 1
+            default: 0
+      responses:
+        '200':
+          description: Metric data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricData'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - bearerAuth: []
+
+components:
+  schemas:
+    MetricType:
+      type: string
+      enum:
+        - RESPONSE_TIME
+        - LEAD_ENGAGEMENT
+        - CONVERSION_RATE
+        - AI_CONFIDENCE
+        - LEAD_QUALITY
+        - SYSTEM_UPTIME
+        - USER_ADOPTION
+      description: |
+        Types of metrics tracked in the system:
+        * RESPONSE_TIME - System response time (target: <500ms)
+        * LEAD_ENGAGEMENT - Lead response rate (target: 80%)
+        * CONVERSION_RATE - Lead conversion improvement (target: 25%)
+        * AI_CONFIDENCE - AI model confidence scores
+        * LEAD_QUALITY - Lead scoring metrics
+        * SYSTEM_UPTIME - System availability (target: 99.9%)
+        * USER_ADOPTION - Active user rate (target: 90%)
+
+    TimeRange:
+      type: string
+      enum:
+        - HOUR
+        - DAY
+        - WEEK
+        - MONTH
+      description: Time range options for analytics queries
+
+    MetricValue:
+      type: object
+      required:
+        - value
+        - timestamp
+        - confidence
+      properties:
+        value:
+          type: number
+          description: Numeric value of the metric
+        timestamp:
+          type: string
+          format: date-time
+          description: Time when metric was recorded
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Confidence score for the metric value
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional contextual data for the metric
+
+    MetricAggregations:
+      type: object
+      required:
+        - average
+        - median
+        - percentile95
+        - min
+        - max
+      properties:
+        average:
+          type: number
+          description: Average value over the time range
+        median:
+          type: number
+          description: Median value over the time range
+        percentile95:
+          type: number
+          description: 95th percentile value
+        min:
+          type: number
+          description: Minimum value in the time range
+        max:
+          type: number
+          description: Maximum value in the time range
+
+    MetricData:
+      type: object
+      required:
+        - type
+        - values
+        - timeRange
+        - aggregations
+      properties:
+        type:
+          $ref: '#/components/schemas/MetricType'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricValue'
+        timeRange:
+          $ref: '#/components/schemas/TimeRange'
+        aggregations:
+          $ref: '#/components/schemas/MetricAggregations'
+
+    AnalyticsOverview:
+      type: object
+      required:
+        - responseTime
+        - leadEngagement
+        - conversionRate
+        - aiConfidence
+        - leadQuality
+        - systemUptime
+        - userAdoption
+      properties:
+        responseTime:
+          $ref: '#/components/schemas/MetricData'
+        leadEngagement:
+          $ref: '#/components/schemas/MetricData'
+        conversionRate:
+          $ref: '#/components/schemas/MetricData'
+        aiConfidence:
+          $ref: '#/components/schemas/MetricData'
+        leadQuality:
+          $ref: '#/components/schemas/MetricData'
+        systemUptime:
+          $ref: '#/components/schemas/MetricData'
+        userAdoption:
+          $ref: '#/components/schemas/MetricData'
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Error message
+        details:
+          type: object
+          description: Additional error details
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for API authentication
+
+tags:
+  - name: Analytics
+    description: Analytics and metrics endpoints
