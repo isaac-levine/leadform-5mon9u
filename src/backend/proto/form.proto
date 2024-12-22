@@ -1,0 +1,179 @@
+syntax = "proto3";
+
+package form.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+
+// Supported form field types
+enum FieldType {
+  FIELD_TYPE_UNSPECIFIED = 0;
+  FIELD_TYPE_TEXT = 1;
+  FIELD_TYPE_EMAIL = 2;
+  FIELD_TYPE_PHONE = 3;
+  FIELD_TYPE_NUMBER = 4;
+  FIELD_TYPE_DATE = 5;
+  FIELD_TYPE_SELECT = 6;
+  FIELD_TYPE_CHECKBOX = 7;
+  FIELD_TYPE_RADIO = 8;
+  FIELD_TYPE_FILE = 9;
+}
+
+// Available validation rule types
+enum ValidationRuleType {
+  VALIDATION_RULE_TYPE_UNSPECIFIED = 0;
+  VALIDATION_RULE_TYPE_REQUIRED = 1;
+  VALIDATION_RULE_TYPE_MIN_LENGTH = 2;
+  VALIDATION_RULE_TYPE_MAX_LENGTH = 3;
+  VALIDATION_RULE_TYPE_PATTERN = 4;
+  VALIDATION_RULE_TYPE_EMAIL = 5;
+  VALIDATION_RULE_TYPE_PHONE = 6;
+  VALIDATION_RULE_TYPE_FILE_SIZE = 7;
+  VALIDATION_RULE_TYPE_FILE_TYPE = 8;
+}
+
+// Validation rule definition
+message ValidationRule {
+  ValidationRuleType type = 1;
+  string value = 2;
+  string message = 3;
+}
+
+// Form field definition
+message FormField {
+  string id = 1;
+  string label = 2;
+  FieldType type = 3;
+  string placeholder = 4;
+  google.protobuf.StringValue default_value = 5;
+  repeated ValidationRule validation = 6;
+  bool required = 7;
+  map<string, string> options = 8;
+  int32 order = 9;
+  bool hidden = 10;
+}
+
+// Form metadata and configuration
+message Form {
+  string id = 1;
+  string organization_id = 2;
+  string name = 3;
+  string description = 4;
+  repeated FormField fields = 5;
+  map<string, string> styling = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  string version = 9;
+  bool active = 10;
+  map<string, string> settings = 11;
+}
+
+// Form submission data
+message FormSubmission {
+  string id = 1;
+  string form_id = 2;
+  map<string, string> data = 3;
+  map<string, string> metadata = 4;
+  google.protobuf.Timestamp submitted_at = 5;
+  string source = 6;
+  string ip_address = 7;
+  string user_agent = 8;
+}
+
+// Create form request
+message CreateFormRequest {
+  string organization_id = 1;
+  string name = 2;
+  string description = 3;
+  repeated FormField fields = 4;
+  map<string, string> styling = 5;
+  map<string, string> settings = 6;
+}
+
+// Get form request
+message GetFormRequest {
+  string id = 1;
+  string organization_id = 2;
+  bool include_submissions = 3;
+}
+
+// Update form request
+message UpdateFormRequest {
+  string id = 1;
+  string organization_id = 2;
+  Form form = 3;
+}
+
+// Delete form request
+message DeleteFormRequest {
+  string id = 1;
+  string organization_id = 2;
+}
+
+// List forms request
+message ListFormsRequest {
+  string organization_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+  string filter = 4;
+  string order_by = 5;
+}
+
+// List forms response
+message ListFormsResponse {
+  repeated Form forms = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Submit form request
+message SubmitFormRequest {
+  string form_id = 1;
+  map<string, string> data = 2;
+  map<string, string> metadata = 3;
+  string source = 4;
+}
+
+// List submissions request
+message ListSubmissionsRequest {
+  string form_id = 1;
+  string organization_id = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+  string filter = 5;
+  string order_by = 6;
+  google.protobuf.Timestamp start_date = 7;
+  google.protobuf.Timestamp end_date = 8;
+}
+
+// List submissions response
+message ListSubmissionsResponse {
+  repeated FormSubmission submissions = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Form service definition
+service FormService {
+  // Creates a new form with validation and metadata
+  rpc CreateForm(CreateFormRequest) returns (Form) {}
+
+  // Retrieves a form by ID with all fields and validation rules
+  rpc GetForm(GetFormRequest) returns (Form) {}
+
+  // Updates an existing form maintaining version history
+  rpc UpdateForm(UpdateFormRequest) returns (Form) {}
+
+  // Soft deletes a form and associated submissions
+  rpc DeleteForm(DeleteFormRequest) returns (google.protobuf.Empty) {}
+
+  // Lists forms with pagination and filtering options
+  rpc ListForms(ListFormsRequest) returns (ListFormsResponse) {}
+
+  // Submits form data with validation and metadata
+  rpc SubmitForm(SubmitFormRequest) returns (FormSubmission) {}
+
+  // Lists form submissions with pagination and search
+  rpc ListSubmissions(ListSubmissionsRequest) returns (ListSubmissionsResponse) {}
+}
