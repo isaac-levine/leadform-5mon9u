@@ -1,0 +1,644 @@
+openapi: 3.1.0
+info:
+  title: Form Service API
+  description: |
+    REST API for managing forms and submissions in the AI-SMS Lead Platform.
+    Provides endpoints for form creation, management, and submission processing.
+  version: 1.0.0
+  contact:
+    name: AI-SMS Platform Team
+    email: support@ai-sms-platform.com
+
+servers:
+  - url: https://api.ai-sms-platform.com/v1
+    description: Production server
+  - url: https://staging-api.ai-sms-platform.com/v1
+    description: Staging server
+  - url: http://localhost:3000/v1
+    description: Local development
+
+security:
+  - JWT: []
+
+paths:
+  /forms:
+    post:
+      summary: Create a new form
+      description: Creates a new form with the specified schema and settings
+      operationId: createForm
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormCreate'
+      responses:
+        '201':
+          description: Form created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    
+    get:
+      summary: List forms
+      description: Retrieves a paginated list of forms with optional filtering
+      operationId: listForms
+      security:
+        - JWT: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: organizationId
+          in: query
+          description: Filter forms by organization ID
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          description: Filter forms by status
+          required: false
+          schema:
+            type: string
+            enum: [active, inactive, draft]
+        - name: sortBy
+          in: query
+          description: Field to sort by
+          required: false
+          schema:
+            type: string
+            enum: [createdAt, updatedAt, name]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          description: Sort order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: List of forms with pagination metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /forms/{id}:
+    parameters:
+      - $ref: '#/components/parameters/FormIdParam'
+    
+    get:
+      summary: Get form by ID
+      description: Retrieves detailed form information by ID
+      operationId: getForm
+      responses:
+        '200':
+          description: Form details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    
+    put:
+      summary: Update form
+      description: Updates an existing form
+      operationId: updateForm
+      security:
+        - JWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormUpdate'
+      responses:
+        '200':
+          description: Form updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    
+    delete:
+      summary: Delete form
+      description: Marks a form as deleted
+      operationId: deleteForm
+      security:
+        - JWT: []
+      responses:
+        '204':
+          description: Form deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /forms/{id}/submissions:
+    parameters:
+      - $ref: '#/components/parameters/FormIdParam'
+    
+    post:
+      summary: Submit form data
+      description: Processes a new form submission
+      operationId: submitForm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormSubmissionCreate'
+      responses:
+        '201':
+          description: Form submission created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSubmission'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/BusinessValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    
+    get:
+      summary: List form submissions
+      description: Retrieves a paginated list of form submissions
+      operationId: listFormSubmissions
+      security:
+        - JWT: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: dateFrom
+          in: query
+          description: Filter submissions from date
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: dateTo
+          in: query
+          description: Filter submissions to date
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: status
+          in: query
+          description: Filter by submission status
+          required: false
+          schema:
+            $ref: '#/components/schemas/SubmissionStatus'
+      responses:
+        '200':
+          description: List of submissions with pagination metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+components:
+  schemas:
+    Form:
+      type: object
+      required:
+        - id
+        - name
+        - fields
+        - organizationId
+        - active
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormField'
+        styling:
+          type: object
+          additionalProperties: true
+        settings:
+          type: object
+          additionalProperties: true
+        organizationId:
+          type: string
+          format: uuid
+        active:
+          type: boolean
+          default: true
+        version:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties: true
+
+    FormCreate:
+      type: object
+      required:
+        - name
+        - fields
+        - organizationId
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormField'
+        styling:
+          type: object
+          additionalProperties: true
+        settings:
+          type: object
+          additionalProperties: true
+        organizationId:
+          type: string
+          format: uuid
+        active:
+          type: boolean
+          default: true
+        metadata:
+          type: object
+          additionalProperties: true
+
+    FormUpdate:
+      type: object
+      required:
+        - name
+        - fields
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormField'
+        styling:
+          type: object
+          additionalProperties: true
+        settings:
+          type: object
+          additionalProperties: true
+        active:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties: true
+
+    FormField:
+      type: object
+      required:
+        - label
+        - type
+        - required
+        - visible
+      properties:
+        label:
+          type: string
+          minLength: 1
+        type:
+          $ref: '#/components/schemas/FieldType'
+        placeholder:
+          type: string
+        defaultValue:
+          type: string
+        validation:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationRule'
+        required:
+          type: boolean
+        visible:
+          type: boolean
+        dependsOn:
+          type: string
+        options:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+
+    FieldType:
+      type: string
+      enum:
+        - TEXT
+        - EMAIL
+        - PHONE
+        - NUMBER
+        - DATE
+        - SELECT
+        - CHECKBOX
+        - RADIO
+        - FILE
+        - SIGNATURE
+        - LOCATION
+        - RICH_TEXT
+
+    ValidationRule:
+      type: object
+      required:
+        - type
+        - value
+        - message
+      properties:
+        type:
+          $ref: '#/components/schemas/ValidationRuleType'
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+        message:
+          type: string
+        isAsync:
+          type: boolean
+          default: false
+        validatorFn:
+          type: string
+
+    ValidationRuleType:
+      type: string
+      enum:
+        - REQUIRED
+        - MIN_LENGTH
+        - MAX_LENGTH
+        - PATTERN
+        - EMAIL
+        - PHONE
+        - FILE_SIZE
+        - FILE_TYPE
+        - CUSTOM
+        - ASYNC
+        - DEPENDENT
+
+    FormSubmission:
+      type: object
+      required:
+        - id
+        - formId
+        - data
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        formId:
+          type: string
+          format: uuid
+        data:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        status:
+          $ref: '#/components/schemas/SubmissionStatus'
+        processingErrors:
+          type: array
+          items:
+            type: string
+        submittedAt:
+          type: string
+          format: date-time
+        processedAt:
+          type: string
+          format: date-time
+
+    FormSubmissionCreate:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+
+    SubmissionStatus:
+      type: string
+      enum:
+        - PENDING
+        - VALIDATED
+        - FAILED
+        - PROCESSED
+        - ARCHIVED
+
+    FormList:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Form'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+
+    SubmissionList:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormSubmission'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+  parameters:
+    FormIdParam:
+      name: id
+      in: path
+      description: Form ID
+      required: true
+      schema:
+        type: string
+        format: uuid
+    
+    PageParam:
+      name: page
+      in: query
+      description: Page number
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    
+    LimitParam:
+      name: limit
+      in: query
+      description: Items per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    ValidationError:
+      description: Invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    BusinessValidationError:
+      description: Business rule validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Forbidden:
+      description: Permission denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Number of seconds to wait before retrying
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    JWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token
