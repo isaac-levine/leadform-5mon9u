@@ -1,0 +1,205 @@
+# Elasticsearch Deployment for AI-SMS Lead Platform
+# Version: 8.9.0
+# Dependencies:
+# - kubernetes v1.27
+# - elasticsearch 8.9.0
+# - high-iops-ssd StorageClass
+
+---
+# ConfigMap containing Elasticsearch configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-config
+  labels:
+    app: elasticsearch
+    component: logging
+data:
+  elasticsearch.yml: |
+    cluster.name: ai-sms-logs
+    node.roles: ["master", "data"]
+    
+    # Discovery and clustering
+    discovery.seed_hosts:
+      - elasticsearch-0.elasticsearch
+      - elasticsearch-1.elasticsearch
+      - elasticsearch-2.elasticsearch
+    cluster.initial_master_nodes:
+      - elasticsearch-0
+      - elasticsearch-1
+      - elasticsearch-2
+    
+    # Network and security settings
+    network.host: 0.0.0.0
+    xpack.security.enabled: true
+    xpack.security.transport.ssl.enabled: true
+    xpack.security.transport.ssl.verification_mode: certificate
+    xpack.security.transport.ssl.keystore.path: certs/elastic-certificates.p12
+    xpack.security.transport.ssl.truststore.path: certs/elastic-certificates.p12
+    
+    # Monitoring
+    xpack.monitoring.collection.enabled: true
+    xpack.monitoring.elasticsearch.collection.enabled: true
+    
+    # Performance optimizations
+    indices.memory.index_buffer_size: 30%
+    indices.queries.cache.size: 30%
+    thread_pool.write.queue_size: 1000
+    thread_pool.search.queue_size: 1000
+
+---
+# Service for Elasticsearch cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+    component: logging
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9200
+      targetPort: 9200
+      protocol: TCP
+      name: https
+    - port: 9300
+      targetPort: 9300
+      protocol: TCP
+      name: transport
+  selector:
+    app: elasticsearch
+    component: logging
+
+---
+# StatefulSet for Elasticsearch cluster
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+    component: logging
+spec:
+  serviceName: elasticsearch
+  replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: elasticsearch
+      component: logging
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+        component: logging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9114"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: elasticsearch
+              topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: fix-permissions
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - chown -R 1000:1000 /usr/share/elasticsearch/data
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/elasticsearch/data
+          securityContext:
+            runAsUser: 0
+        - name: increase-vm-max-map
+          image: busybox:1.35
+          command:
+            - sysctl
+            - -w
+            - vm.max_map_count=262144
+          securityContext:
+            privileged: true
+      containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.9.0
+          ports:
+            - name: http
+              containerPort: 9200
+            - name: transport
+              containerPort: 9300
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "2Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          env:
+            - name: ES_JAVA_OPTS
+              value: "-Xms1g -Xmx1g"
+            - name: node.name
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/elasticsearch/data
+            - name: config
+              mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              subPath: elasticsearch.yml
+            - name: certificates
+              mountPath: /usr/share/elasticsearch/config/certs
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: 9200
+              scheme: HTTPS
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 9300
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+      volumes:
+        - name: config
+          configMap:
+            name: elasticsearch-config
+        - name: certificates
+          secret:
+            secretName: elasticsearch-certs
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: high-iops-ssd
+        resources:
+          requests:
+            storage: 100Gi
+
+---
+# PodDisruptionBudget to ensure high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: elasticsearch-pdb
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: elasticsearch
+      component: logging
