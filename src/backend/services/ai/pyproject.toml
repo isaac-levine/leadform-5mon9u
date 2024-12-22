@@ -1,0 +1,91 @@
+[tool.poetry]
+name = "ai-service"
+version = "0.1.0"
+description = "AI service for lead nurturing platform with NLP processing and conversation management"
+authors = ["AI-SMS Platform Team"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.100.0"          # High-performance web framework
+uvicorn = "^0.23.0"          # Fast ASGI server implementation
+langchain = "^0.0.235"        # LLM framework for conversation management
+pydantic = "^1.10.11"        # Data validation and settings management
+redis = "^4.6.0"             # Fast caching for context management
+openai = "^0.27.8"           # OpenAI GPT integration
+prometheus-fastapi-instrumentator = "^5.9.0"  # Performance monitoring
+python-multipart = "^0.0.6"   # Form data handling
+httpx = "^0.24.1"            # Async HTTP client
+tenacity = "^8.2.2"          # Retry handling for API calls
+structlog = "^23.1.0"        # Structured logging
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"            # Testing framework
+black = "^23.7.0"            # Code formatting
+isort = "^5.12.0"           # Import sorting
+mypy = "^1.4.1"             # Static type checking
+pytest-asyncio = "^0.21.1"   # Async test support
+pytest-cov = "^4.1.0"        # Test coverage
+pytest-mock = "^3.11.1"      # Mocking support
+flake8 = "^6.1.0"           # Linting
+bandit = "^1.7.5"           # Security linting
+types-redis = "^4.6.0.3"     # Redis type stubs
+types-requests = "^2.31.0.2" # Request type stubs
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+start = "uvicorn src.main:app --host 0.0.0.0 --port 8000"
+dev = "uvicorn src.main:app --reload --host 0.0.0.0 --port 8000"
+test = "pytest"
+format = "black . && isort ."
+typecheck = "mypy src tests"
+lint = "flake8 src tests"
+security-check = "bandit -r src"
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unreachable = true
+show_error_codes = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --cov=src --cov-report=term-missing"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "raise ImportError",
+    "except ImportError:",
+]
