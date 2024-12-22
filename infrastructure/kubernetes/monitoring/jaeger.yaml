@@ -1,0 +1,222 @@
+# Jaeger Distributed Tracing System Configuration
+# Version: 1.45.0
+# Dependencies:
+# - jaegertracing/jaeger-operator v1.45.0
+# - kubernetes v1.27
+# - elasticsearch 8.9.0
+
+---
+# ServiceAccount for Jaeger components
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jaeger
+  namespace: monitoring
+  labels:
+    app: jaeger
+    component: tracing
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/part-of: ai-sms-lead-platform
+    app.kubernetes.io/managed-by: kustomize
+
+---
+# ClusterRole for Jaeger operator permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jaeger
+  labels:
+    app: jaeger
+    component: tracing
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "configmaps", "secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["monitoring.coreos.com"]
+    resources: ["servicemonitors"]
+    verbs: ["get", "create"]
+
+---
+# ClusterRoleBinding for Jaeger ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jaeger
+  labels:
+    app: jaeger
+    component: tracing
+subjects:
+  - kind: ServiceAccount
+    name: jaeger
+    namespace: monitoring
+roleRef:
+  kind: ClusterRole
+  name: jaeger
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# ConfigMap for Jaeger configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaeger-config
+  namespace: monitoring
+  labels:
+    app: jaeger
+    component: tracing
+data:
+  sampling.yaml: |
+    default:
+      type: probabilistic
+      param: ${JAEGER_SAMPLING_RATE}
+  collector.yaml: |
+    es:
+      bulk:
+        size: ${JAEGER_ES_BULK_SIZE}
+        workers: ${JAEGER_ES_BULK_WORKERS}
+      retention: ${JAEGER_RETENTION_DAYS}d
+  query.yaml: |
+    es:
+      max-traces: ${JAEGER_MAX_TRACES}
+      timeout: 15s
+
+---
+# Jaeger Custom Resource
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: jaeger
+  namespace: monitoring
+  labels:
+    app: jaeger
+    component: tracing
+spec:
+  strategy: production
+  storage:
+    type: elasticsearch
+    options:
+      es:
+        server-urls: https://elasticsearch:9200
+        username: ${ES_USERNAME}
+        password: ${ES_PASSWORD}
+        tls:
+          ca: /es/certs/ca.crt
+    secretName: jaeger-es-secret
+    volumeMounts:
+      - name: es-certs
+        mountPath: /es/certs
+        readOnly: true
+  
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - jaeger.example.com
+    tls:
+      - secretName: jaeger-tls
+        hosts:
+          - jaeger.example.com
+
+  collector:
+    replicas: ${JAEGER_COLLECTOR_REPLICAS}
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+    autoscale: true
+    maxReplicas: 5
+    config:
+      sampling:
+        configMapName: jaeger-config
+        volumeName: sampling-config
+    options:
+      collector:
+        num-workers: 50
+        queue-size: 2000
+      kafka:
+        producer:
+          compression.type: snappy
+          batch.size: 131072
+    
+  query:
+    replicas: ${JAEGER_QUERY_REPLICAS}
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    serviceType: ClusterIP
+    options:
+      query:
+        base-path: /jaeger
+    volumeMounts:
+      - name: query-config
+        mountPath: /etc/jaeger/query.yaml
+        subPath: query.yaml
+
+  agent:
+    strategy: sidecar
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+  volumes:
+    - name: es-certs
+      secret:
+        secretName: elasticsearch-certs
+    - name: sampling-config
+      configMap:
+        name: jaeger-config
+        items:
+          - key: sampling.yaml
+            path: sampling.yaml
+    - name: query-config
+      configMap:
+        name: jaeger-config
+        items:
+          - key: query.yaml
+            path: query.yaml
+
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "16686"
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+---
+# Service Monitor for Prometheus integration
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: jaeger
+  namespace: monitoring
+  labels:
+    app: jaeger
+    component: tracing
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: jaeger
+  endpoints:
+    - port: admin-http
+      path: /metrics
+    - port: collector-http
+      path: /metrics
