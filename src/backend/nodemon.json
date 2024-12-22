@@ -1,0 +1,35 @@
+{
+  "watch": [
+    "src/**/*.ts",
+    "shared/**/*.ts",
+    "services/**/*.ts"
+  ],
+  "ignore": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/node_modules/**",
+    "dist/**",
+    "coverage/**",
+    ".git/**",
+    "**/*.d.ts"
+  ],
+  "ext": "ts,json",
+  "exec": "ts-node --files --project tsconfig.json src/index.ts",
+  "verbose": true,
+  "delay": 1000,
+  "events": {
+    "start": "echo 'Starting development server...'",
+    "restart": "echo 'Restarting due to changes...'",
+    "crash": "echo 'Application crashed - waiting for changes before restarting...'"
+  },
+  "env": {
+    "NODE_ENV": "development",
+    "TS_NODE_PROJECT": "./tsconfig.json",
+    "TS_NODE_TRANSPILE_ONLY": "true",
+    "DEBUG": "ai-sms:*"
+  },
+  "legacyWatch": false,
+  "signal": "SIGTERM",
+  "colours": true,
+  "restartable": "rs"
+}
