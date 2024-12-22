@@ -1,0 +1,33 @@
+# This file defines code ownership rules for the AI-SMS Lead Platform repository.
+# Each line assigns ownership of specific paths to teams or individuals.
+# Format: path_pattern @owner1 @owner2
+
+# Global ownership - Project leads have oversight over all repository changes
+* @project-leads
+
+# Backend service ownership
+src/backend/ @backend-team
+
+# AI service specific ownership
+src/backend/services/ai/ @ai-team
+
+# Frontend application ownership
+src/web/ @frontend-team
+
+# Form widget joint ownership between Frontend and SDK teams
+src/web/widget/ @frontend-team @sdk-team
+
+# Infrastructure configuration ownership
+infrastructure/ @devops-team
+
+# CI/CD workflow configuration ownership
+.github/workflows/ @devops-team
+
+# Kubernetes secrets joint ownership between Security and DevOps
+infrastructure/kubernetes/secrets/ @security-team @devops-team
+
+# Shared backend code joint ownership
+src/backend/shared/ @backend-team @architecture-team
+
+# Shared frontend utilities joint ownership
+src/web/src/lib/ @frontend-team @architecture-team
