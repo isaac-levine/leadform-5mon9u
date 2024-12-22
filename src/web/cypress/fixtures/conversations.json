@@ -1,0 +1,163 @@
+{
+  "conversations": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "leadId": "123e4567-e89b-12d3-a456-426614174001",
+      "formId": "123e4567-e89b-12d3-a456-426614174002",
+      "status": "ACTIVE",
+      "phoneNumber": "+1234567890",
+      "assignedAgent": null,
+      "lastActivity": "2024-01-20T15:30:00.123Z",
+      "messages": [
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174003",
+          "conversationId": "123e4567-e89b-12d3-a456-426614174000",
+          "content": "Hi, I'm interested in learning more about your services",
+          "direction": "INBOUND",
+          "status": "DELIVERED",
+          "aiConfidence": 0.95,
+          "timestamp": "2024-01-20T15:30:00.123Z",
+          "processingTime": 245,
+          "metadata": {
+            "intent": "inquiry",
+            "sentiment": "positive",
+            "keywords": ["services", "information"]
+          }
+        },
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174004",
+          "conversationId": "123e4567-e89b-12d3-a456-426614174000",
+          "content": "Thank you for your interest! I'd be happy to tell you more about our services. What specific aspects would you like to learn about?",
+          "direction": "OUTBOUND",
+          "status": "DELIVERED",
+          "aiConfidence": 0.92,
+          "timestamp": "2024-01-20T15:30:02.456Z",
+          "processingTime": 320,
+          "metadata": {
+            "intent": "clarification",
+            "sentiment": "positive",
+            "responseType": "open_ended"
+          }
+        }
+      ],
+      "metadata": {
+        "source": "Contact Form",
+        "tags": ["new-lead", "high-priority"],
+        "leadScore": 85,
+        "customFields": {
+          "industry": "technology",
+          "budget": "enterprise"
+        }
+      },
+      "aiEnabled": true,
+      "language": "en-US",
+      "tags": ["active", "high-value"]
+    },
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174010",
+      "leadId": "123e4567-e89b-12d3-a456-426614174011",
+      "formId": "123e4567-e89b-12d3-a456-426614174012",
+      "status": "HUMAN_TAKEOVER",
+      "phoneNumber": "+1987654321",
+      "assignedAgent": "123e4567-e89b-12d3-a456-426614174099",
+      "lastActivity": "2024-01-20T15:25:00.123Z",
+      "messages": [
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174013",
+          "conversationId": "123e4567-e89b-12d3-a456-426614174010",
+          "content": "What are your pricing options?",
+          "direction": "INBOUND",
+          "status": "DELIVERED",
+          "aiConfidence": 0.88,
+          "timestamp": "2024-01-20T15:24:00.123Z",
+          "processingTime": 280,
+          "metadata": {
+            "intent": "pricing",
+            "sentiment": "neutral",
+            "keywords": ["pricing", "cost"]
+          }
+        },
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174014",
+          "conversationId": "123e4567-e89b-12d3-a456-426614174010",
+          "content": "Our pricing varies based on your specific needs. Could you tell me more about your requirements?",
+          "direction": "OUTBOUND",
+          "status": "DELIVERED",
+          "aiConfidence": 0.65,
+          "timestamp": "2024-01-20T15:24:30.456Z",
+          "processingTime": 450,
+          "metadata": {
+            "intent": "qualification",
+            "sentiment": "neutral",
+            "triggerTakeover": true
+          }
+        }
+      ],
+      "metadata": {
+        "source": "Website Chat",
+        "tags": ["pricing-inquiry", "needs-qualification"],
+        "leadScore": 75,
+        "customFields": {
+          "industry": "retail",
+          "budget": "mid-market"
+        }
+      },
+      "aiEnabled": false,
+      "language": "en-US",
+      "tags": ["human-agent", "pricing-discussion"]
+    },
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174020",
+      "leadId": "123e4567-e89b-12d3-a456-426614174021",
+      "formId": "123e4567-e89b-12d3-a456-426614174022",
+      "status": "CLOSED",
+      "phoneNumber": "+1122334455",
+      "assignedAgent": null,
+      "lastActivity": "2024-01-20T14:30:00.123Z",
+      "messages": [
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174023",
+          "conversationId": "123e4567-e89b-12d3-a456-426614174020",
+          "content": "Thanks for your help!",
+          "direction": "INBOUND",
+          "status": "DELIVERED",
+          "aiConfidence": 0.98,
+          "timestamp": "2024-01-20T14:29:00.123Z",
+          "processingTime": 180,
+          "metadata": {
+            "intent": "gratitude",
+            "sentiment": "positive",
+            "keywords": ["thanks", "help"]
+          }
+        },
+        {
+          "id": "123e4567-e89b-12d3-a456-426614174024",
+          "conversationId": "123e4567-e89b-12d3-a456-426614174020",
+          "content": "You're welcome! Don't hesitate to reach out if you need anything else.",
+          "direction": "OUTBOUND",
+          "status": "DELIVERED",
+          "aiConfidence": 0.96,
+          "timestamp": "2024-01-20T14:29:30.456Z",
+          "processingTime": 210,
+          "metadata": {
+            "intent": "closing",
+            "sentiment": "positive",
+            "conversationEnd": true
+          }
+        }
+      ],
+      "metadata": {
+        "source": "Landing Page",
+        "tags": ["completed", "satisfied-customer"],
+        "leadScore": 90,
+        "customFields": {
+          "industry": "healthcare",
+          "budget": "enterprise"
+        }
+      },
+      "aiEnabled": true,
+      "language": "en-US",
+      "tags": ["closed", "successful"]
+    }
+  ]
+}
