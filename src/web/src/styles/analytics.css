@@ -1,0 +1,178 @@
+/* Analytics Dashboard Styles v1.0.0
+ * Using tailwindcss ^3.3.0
+ * Implements WCAG 2.1 Level AA compliance
+ */
+
+/* Global CSS Variables */
+:root {
+  /* Color System */
+  --primary-color: #2563EB;
+  --secondary-color: #3B82F6;
+  --success-color: #10B981;
+  --error-color: #EF4444;
+  --neutral-color: #1F2937;
+
+  /* Layout */
+  --container-max: 1280px;
+
+  /* Typography */
+  --font-primary: Inter, sans-serif;
+  --font-secondary: "SF Pro", system-ui, -apple-system, sans-serif;
+
+  /* Interactive Elements */
+  --focus-ring: 0 0 0 2px var(--primary-color);
+  --transition-speed: 0.2s;
+
+  /* Chart Dimensions */
+  --chart-height-desktop: 300px;
+  --chart-height-mobile: 200px;
+}
+
+/* Main Container */
+.analytics-container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: clamp(16px, 5vw, 24px);
+  font-family: var(--font-primary);
+  min-height: 100vh;
+  color: var(--neutral-color);
+}
+
+/* Metrics Grid Layout */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: clamp(16px, 3vw, 24px);
+  margin-bottom: 32px;
+  will-change: transform;
+  contain: layout style;
+}
+
+/* Metric Card Styling */
+.metric-card {
+  background: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: clamp(16px, 4vw, 24px);
+  min-height: 200px;
+  transition: transform var(--transition-speed) ease-in-out;
+  position: relative;
+  outline: none;
+}
+
+.metric-card:focus-within {
+  box-shadow: var(--focus-ring);
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Chart Container */
+.chart-container {
+  width: 100%;
+  height: var(--chart-height-desktop);
+  margin-top: 24px;
+  position: relative;
+  contain: strict;
+  overflow: hidden;
+}
+
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: more) {
+  .metric-card {
+    border: 2px solid var(--neutral-color);
+    box-shadow: none;
+  }
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1280px) {
+  .metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .chart-container {
+    height: calc(var(--chart-height-desktop) * 0.8);
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .metric-card {
+    min-height: 180px;
+  }
+
+  .chart-container {
+    height: var(--chart-height-mobile);
+  }
+}
+
+/* Print Styles */
+@media print {
+  .analytics-container {
+    padding: 0;
+  }
+
+  .metric-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+
+  .chart-container {
+    page-break-inside: avoid;
+  }
+}
+
+/* Performance Optimizations */
+@layer utilities {
+  .gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+}
+
+/* Screen Reader Only Content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus Visible Polyfill */
+.js-focus-visible :focus:not(.focus-visible) {
+  outline: none;
+}
+
+.js-focus-visible .focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
