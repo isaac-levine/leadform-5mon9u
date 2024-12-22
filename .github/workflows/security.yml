@@ -34,20 +34,20 @@ jobs:
           fetch-depth: 0
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: javascript, typescript, python
           queries: security-extended,security-and-quality
           config-file: ./.github/codeql/codeql-config.yml
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
         with:
           category: "/language:javascript,typescript,python"
           upload-database: true
 
       - name: Upload SARIF Results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: success() || failure()
         with:
           sarif_file: results/codeql-results.sarif
