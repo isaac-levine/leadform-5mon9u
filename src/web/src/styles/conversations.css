@@ -1,0 +1,203 @@
+/* Conversations.css - v1.0.0
+ * Implements conversation interface styles with accessibility and responsive design
+ * Dependencies: tailwindcss ^3.3.0
+ */
+
+/* Global CSS Variables */
+:root {
+  --conversation-primary: #2563EB;
+  --conversation-secondary: #3B82F6;
+  --conversation-success: #10B981;
+  --conversation-error: #EF4444;
+  --conversation-neutral: #1F2937;
+  --conversation-spacing: 4px;
+  --conversation-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --conversation-border: 1px solid rgba(0, 0, 0, 0.1);
+  --conversation-transition: all 0.2s ease-in-out;
+  --conversation-radius: 8px;
+  --conversation-z-index: 100;
+}
+
+/* Message List Container */
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: calc(var(--conversation-spacing) * 4);
+  gap: calc(var(--conversation-spacing) * 3);
+  display: flex;
+  flex-direction: column;
+  contain: content;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Message Bubbles */
+.message {
+  max-width: 80%;
+  padding: calc(var(--conversation-spacing) * 3);
+  border-radius: var(--conversation-radius);
+  margin-bottom: calc(var(--conversation-spacing) * 2);
+  transition: var(--conversation-transition);
+  opacity: 0;
+  transform: translateY(10px);
+  animation: messageAppear 0.3s ease forwards;
+  position: relative;
+  will-change: transform, opacity;
+}
+
+.message-inbound {
+  align-self: flex-start;
+  background-color: #f3f4f6;
+  color: var(--conversation-neutral);
+}
+
+.message-outbound {
+  align-self: flex-end;
+  background-color: var(--conversation-primary);
+  color: white;
+}
+
+/* AI Confidence Indicator */
+.ai-confidence {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--conversation-spacing) * 2);
+  font-size: 0.875rem;
+  color: var(--conversation-neutral);
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.05);
+  transition: var(--conversation-transition);
+}
+
+.ai-confidence-high {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--conversation-success);
+}
+
+.ai-confidence-medium {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.ai-confidence-low {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--conversation-error);
+}
+
+/* Typing Indicator */
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  align-items: center;
+  animation: typingBounce 1s infinite;
+  opacity: 0.7;
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background-color: var(--conversation-neutral);
+  border-radius: 50%;
+}
+
+/* Accessibility Styles */
+.focus-visible {
+  outline: 2px solid var(--conversation-primary);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* High Contrast Mode */
+@media (forced-colors: active) {
+  .message-inbound {
+    background-color: #000000;
+    color: #FFFFFF;
+    border: 1px solid #FFFFFF;
+  }
+
+  .message-outbound {
+    background-color: var(--conversation-primary);
+    color: #FFFFFF;
+    border: 1px solid #FFFFFF;
+  }
+}
+
+/* Animations */
+@keyframes messageAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .message {
+    max-width: 90%;
+  }
+
+  .message-input {
+    padding: calc(var(--conversation-spacing) * 2);
+  }
+}
+
+@media (max-width: 640px) {
+  .conversation-header {
+    padding: calc(var(--conversation-spacing) * 3);
+    gap: calc(var(--conversation-spacing) * 2);
+  }
+
+  .ai-confidence {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .message {
+    max-width: 95%;
+    font-size: 0.875rem;
+  }
+
+  .conversation-header {
+    flex-direction: column;
+    gap: calc(var(--conversation-spacing) * 2);
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
