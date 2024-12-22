@@ -1,0 +1,402 @@
+openapi: 3.0.3
+info:
+  title: SMS Service API
+  description: |
+    Provider-agnostic SMS API with AI-powered conversation management and human oversight capabilities.
+    Supports multiple SMS providers, real-time message processing, and seamless human takeover.
+  version: 1.0.0
+  contact:
+    name: AI-SMS Platform Team
+    email: api-support@ai-sms-platform.com
+
+servers:
+  - url: https://api.ai-sms-platform.com/v1
+    description: Production server
+  - url: https://staging-api.ai-sms-platform.com/v1
+    description: Staging server
+  - url: http://localhost:3000/v1
+    description: Local development
+
+security:
+  - bearerAuth: []
+  - apiKeyAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Message:
+      type: object
+      required:
+        - content
+        - direction
+        - phoneNumber
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        content:
+          type: string
+          maxLength: 1600
+        direction:
+          type: string
+          enum: [INBOUND, OUTBOUND]
+        status:
+          type: string
+          enum: [QUEUED, SENT, DELIVERED, READ, FAILED, BLOCKED, EXPIRED]
+        aiConfidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        processingTime:
+          type: number
+          description: AI processing time in milliseconds
+        metadata:
+          type: object
+          additionalProperties: true
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED, CLOSED, HUMAN_TAKEOVER, AI_PROCESSING, WAITING_RESPONSE, OPTED_OUT]
+        phoneNumber:
+          type: string
+          pattern: ^\+[1-9]\d{1,14}$
+        assignedAgent:
+          type: string
+          format: uuid
+          nullable: true
+        lastActivity:
+          type: string
+          format: date-time
+        averageAiConfidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        metadata:
+          type: object
+          additionalProperties: true
+
+    BulkMessageRequest:
+      type: object
+      required:
+        - messages
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+          maxItems: 1000
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+  parameters:
+    ConversationId:
+      name: conversationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MessageId:
+      name: messageId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Provider:
+      name: provider
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [TWILIO, MESSAGEBIRD, MOCK_PROVIDER]
+
+  headers:
+    X-Response-Time:
+      description: Processing time in milliseconds
+      schema:
+        type: integer
+        minimum: 0
+    X-AI-Confidence:
+      description: AI confidence score for generated response
+      schema:
+        type: number
+        minimum: 0
+        maximum: 1
+    X-Rate-Limit:
+      description: Rate limit ceiling for the API key
+      schema:
+        type: integer
+    X-Rate-Remaining:
+      description: Number of requests remaining in the time window
+      schema:
+        type: integer
+
+paths:
+  /messages:
+    post:
+      summary: Send a new SMS message
+      operationId: sendMessage
+      tags: [Messages]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+      responses:
+        '201':
+          description: Message created successfully
+          headers:
+            X-Response-Time:
+              $ref: '#/components/headers/X-Response-Time'
+            X-AI-Confidence:
+              $ref: '#/components/headers/X-AI-Confidence'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /messages/bulk:
+    post:
+      summary: Send multiple SMS messages in bulk
+      operationId: sendBulkMessages
+      tags: [Messages]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkMessageRequest'
+      responses:
+        '201':
+          description: Bulk messages queued successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+
+  /messages/{messageId}:
+    get:
+      summary: Get message details
+      operationId: getMessage
+      tags: [Messages]
+      parameters:
+        - $ref: '#/components/parameters/MessageId'
+      responses:
+        '200':
+          description: Message details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /messages/{messageId}/status:
+    put:
+      summary: Update message status
+      operationId: updateMessageStatus
+      tags: [Messages]
+      parameters:
+        - $ref: '#/components/parameters/MessageId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [QUEUED, SENT, DELIVERED, READ, FAILED, BLOCKED, EXPIRED]
+      responses:
+        '200':
+          description: Message status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /conversations:
+    get:
+      summary: List conversations
+      operationId: listConversations
+      tags: [Conversations]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, PAUSED, CLOSED, HUMAN_TAKEOVER, AI_PROCESSING, WAITING_RESPONSE, OPTED_OUT]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Conversations retrieved successfully
+          headers:
+            X-Total-Count:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+
+  /conversations/{conversationId}:
+    get:
+      summary: Get conversation details
+      operationId: getConversation
+      tags: [Conversations]
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      responses:
+        '200':
+          description: Conversation details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /conversations/{conversationId}/takeover:
+    put:
+      summary: Human agent takes over conversation
+      operationId: takeoverConversation
+      tags: [Conversations]
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - agentId
+              properties:
+                agentId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Conversation takeover successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+
+  /webhooks/{provider}:
+    post:
+      summary: Webhook endpoint for SMS provider callbacks
+      operationId: handleProviderWebhook
+      tags: [Webhooks]
+      security: 
+        - apiKeyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Provider'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Webhook processed successfully
+
+components:
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        X-Rate-Limit-Reset:
+          schema:
+            type: integer
+            description: Time in seconds until rate limit resets
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+tags:
+  - name: Messages
+    description: SMS message operations
+  - name: Conversations
+    description: Conversation management
+  - name: Webhooks
+    description: Provider webhook endpoints
