@@ -1,0 +1,65 @@
+# Prometheus Recording Rules Configuration v2.45.0
+# Purpose: Pre-compute frequently needed metrics for API performance, AI service metrics, 
+# and system health monitoring with enhanced aggregations and distributions
+
+groups:
+  # API Performance Metrics
+  - name: api_metrics
+    interval: 1m
+    rules:
+      # Request Rate per Service (requests/sec over 5m)
+      - record: api:request_rate:5m
+        expr: sum(rate(http_requests_total[5m])) by (service)
+
+      # 95th Percentile Response Time per Service (seconds over 5m)
+      # Tracks target of <100ms API latency and <500ms overall response time
+      - record: api:response_time_p95:5m
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service))
+
+      # Error Rate per Service (ratio over 5m)
+      - record: api:error_rate:5m
+        expr: |
+          sum(rate(http_requests_total{status=~"5..|4.."}[5m])) by (service) 
+          / 
+          sum(rate(http_requests_total[5m])) by (service)
+
+      # Service Uptime (percentage over 24h)
+      # Tracks 99.9% uptime target
+      - record: api:uptime:24h
+        expr: avg_over_time(up{job=~".*-service"}[24h]) * 100
+
+  # AI Service Metrics
+  - name: ai_metrics
+    interval: 1m
+    rules:
+      # Average AI Processing Time (seconds over 5m)
+      # Tracks target of <500ms for AI processing
+      - record: ai:processing_time:5m
+        expr: |
+          rate(ai_processing_time_seconds_sum[5m]) 
+          / 
+          rate(ai_processing_time_seconds_count[5m])
+
+      # AI Confidence Score Distribution (histogram over 5m)
+      - record: ai:confidence_distribution:5m
+        expr: rate(ai_confidence_score_bucket[5m])
+
+      # AI Message Processing Rate (messages/sec over 5m)
+      - record: ai:message_rate:5m
+        expr: rate(ai_messages_processed_total[5m])
+
+      # AI Error Rate (errors/sec over 5m)
+      - record: ai:error_rate:5m
+        expr: rate(ai_processing_errors_total[5m])
+
+  # Resource Usage Metrics
+  - name: resource_metrics
+    interval: 5m
+    rules:
+      # Average Memory Usage per Service (bytes over 5m)
+      - record: service:memory_usage:5m
+        expr: avg(process_resident_memory_bytes) by (job)
+
+      # Average CPU Usage per Service (cores over 5m)
+      - record: service:cpu_usage:5m
+        expr: avg(rate(process_cpu_seconds_total[5m])) by (job)
