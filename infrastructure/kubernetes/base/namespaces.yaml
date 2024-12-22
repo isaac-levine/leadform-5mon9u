@@ -1,0 +1,72 @@
+# Kubernetes API version: v1
+# Purpose: Define core namespaces with security and monitoring configurations
+# Version: 1.0.0
+
+apiVersion: v1
+kind: List
+items:
+  # Application Namespace
+  - apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: app
+      labels:
+        name: app
+        environment: production
+        security-tier: restricted
+        monitoring: enabled
+        logging: enabled
+        app.kubernetes.io/name: ai-sms-platform
+        app.kubernetes.io/part-of: ai-sms-lead-platform
+        app.kubernetes.io/managed-by: kustomize
+      annotations:
+        security.kubernetes.io/enforce-pod-security: restricted
+        network.kubernetes.io/policy: enabled
+        seccomp.security.alpha.kubernetes.io/pod: runtime/default
+        container.seccomp.security.alpha.kubernetes.io/*: runtime/default
+        scheduler.alpha.kubernetes.io/defaultTolerations: '[{"key":"dedicated","operator":"Equal","value":"app","effect":"NoSchedule"}]'
+        scheduler.alpha.kubernetes.io/node-selector: environment=production
+
+  # Monitoring Namespace
+  - apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: monitoring
+      labels:
+        name: monitoring
+        environment: production
+        security-tier: restricted
+        monitoring: self
+        logging: enabled
+        app.kubernetes.io/name: monitoring-stack
+        app.kubernetes.io/part-of: ai-sms-lead-platform
+        app.kubernetes.io/managed-by: kustomize
+      annotations:
+        security.kubernetes.io/enforce-pod-security: restricted
+        network.kubernetes.io/policy: enabled
+        seccomp.security.alpha.kubernetes.io/pod: runtime/default
+        container.seccomp.security.alpha.kubernetes.io/*: runtime/default
+        scheduler.alpha.kubernetes.io/defaultTolerations: '[{"key":"dedicated","operator":"Equal","value":"monitoring","effect":"NoSchedule"}]'
+        scheduler.alpha.kubernetes.io/node-selector: node-role.kubernetes.io/monitoring=true
+
+  # Logging Namespace
+  - apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: logging
+      labels:
+        name: logging
+        environment: production
+        security-tier: restricted
+        monitoring: enabled
+        logging: self
+        app.kubernetes.io/name: logging-stack
+        app.kubernetes.io/part-of: ai-sms-lead-platform
+        app.kubernetes.io/managed-by: kustomize
+      annotations:
+        security.kubernetes.io/enforce-pod-security: restricted
+        network.kubernetes.io/policy: enabled
+        seccomp.security.alpha.kubernetes.io/pod: runtime/default
+        container.seccomp.security.alpha.kubernetes.io/*: runtime/default
+        scheduler.alpha.kubernetes.io/defaultTolerations: '[{"key":"dedicated","operator":"Equal","value":"logging","effect":"NoSchedule"}]'
+        scheduler.alpha.kubernetes.io/node-selector: node-role.kubernetes.io/logging=true
