@@ -1,0 +1,28 @@
+{
+  "version": "7.3.0",
+  "npmClient": "npm",
+  "useWorkspaces": true,
+  "packages": [
+    "services/*",
+    "shared/*"
+  ],
+  "command": {
+    "version": {
+      "exact": true,
+      "conventionalCommits": true,
+      "message": "chore(release): publish %s"
+    },
+    "publish": {
+      "access": "restricted",
+      "registry": "https://registry.npmjs.org/"
+    },
+    "bootstrap": {
+      "npmClientArgs": [
+        "--no-package-lock"
+      ]
+    },
+    "run": {
+      "stream": true
+    }
+  }
+}
