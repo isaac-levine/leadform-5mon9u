@@ -1,0 +1,147 @@
+syntax = "proto3";
+
+package analytics;
+
+import "google/protobuf/timestamp.proto";
+
+// Package options for language-specific code generation
+option go_package = "./analytics";
+option java_package = "com.aisms.analytics";
+option java_multiple_files = true;
+option optimize_for = SPEED;
+
+// Enum for different types of metrics that can be tracked
+enum MetricType {
+  METRIC_TYPE_UNSPECIFIED = 0;
+  RESPONSE_TIME = 1;          // Target: <500ms
+  LEAD_ENGAGEMENT = 2;        // Target: 80% response rate
+  CONVERSION_RATE = 3;        // Target: 25% improvement
+  AI_CONFIDENCE = 4;          // AI model confidence scores
+  LEAD_QUALITY = 5;          // Lead scoring metrics
+}
+
+// Enum for time range granularity options
+enum TimeRange {
+  TIME_RANGE_UNSPECIFIED = 0;
+  HOUR = 1;
+  DAY = 2;
+  WEEK = 3;
+  MONTH = 4;
+}
+
+// Message for individual metric measurements with metadata and confidence
+message MetricValue {
+  // Numeric value of the metric
+  double value = 1;
+  
+  // Precise time when metric was recorded
+  google.protobuf.Timestamp timestamp = 2;
+  
+  // Confidence level in metric accuracy (0-1)
+  float confidence_score = 3;
+  
+  // Additional context and tracking information
+  map<string, string> metadata = 4;
+}
+
+// Message for metric data with organization context and caching hints
+message MetricData {
+  // Organization identifier for data isolation
+  string organization_id = 1;
+  
+  // Type of metric being tracked
+  MetricType type = 2;
+  
+  // Array of metric values with metadata
+  repeated MetricValue values = 3;
+  
+  // Time range for the data series
+  TimeRange time_range = 4;
+  
+  // Cache time-to-live in seconds
+  int32 cache_ttl = 5;
+}
+
+// Request message for getting analytics overview
+message GetAnalyticsOverviewRequest {
+  // Organization identifier
+  string organization_id = 1;
+  
+  // Time range for the overview
+  TimeRange time_range = 2;
+  
+  // Whether to include raw values or just aggregations
+  bool include_raw_values = 3;
+}
+
+// Response message containing analytics overview
+message AnalyticsOverview {
+  // Organization identifier
+  string organization_id = 1;
+  
+  // Response time metrics (target: <500ms)
+  MetricData response_time = 2;
+  
+  // Lead engagement metrics (target: 80% response rate)
+  MetricData lead_engagement = 3;
+  
+  // Conversion rate metrics (target: 25% improvement)
+  MetricData conversion_rate = 4;
+  
+  // AI confidence metrics
+  MetricData ai_confidence = 5;
+  
+  // Lead quality metrics
+  MetricData lead_quality = 6;
+}
+
+// Request message for streaming metric data
+message GetMetricDataRequest {
+  // Organization identifier
+  string organization_id = 1;
+  
+  // Type of metric to stream
+  MetricType type = 2;
+  
+  // Time range for the data
+  TimeRange time_range = 3;
+}
+
+// Request message for batch metric recording
+message RecordMetricBatchRequest {
+  // Organization identifier
+  string organization_id = 1;
+  
+  // Batch of metric data to record
+  repeated MetricData metrics = 2;
+}
+
+// Response message for batch metric recording
+message RecordMetricBatchResponse {
+  // Number of metrics successfully recorded
+  int32 recorded_count = 1;
+  
+  // Any errors encountered during recording
+  repeated string errors = 2;
+}
+
+// Enhanced gRPC service for analytics operations with streaming and batch support
+service AnalyticsService {
+  // Get overview of all analytics metrics with organization context
+  rpc GetAnalyticsOverview(GetAnalyticsOverviewRequest) returns (AnalyticsOverview) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option deadline = 500;
+  }
+  
+  // Stream real-time metric updates
+  rpc GetMetricDataStream(GetMetricDataRequest) returns (stream MetricData) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+    option deadline = 500;
+  }
+  
+  // Record multiple metric measurements efficiently
+  rpc RecordMetricBatch(RecordMetricBatchRequest) returns (RecordMetricBatchResponse) {
+    option idempotency_level = IDEMPOTENT;
+    option deadline = 1000;
+  }
+}
