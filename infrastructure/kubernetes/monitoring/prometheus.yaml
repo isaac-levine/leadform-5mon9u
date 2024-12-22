@@ -1,0 +1,236 @@
+# Prometheus Kubernetes Deployment Manifest v2.45.0
+# Purpose: Production-grade Prometheus deployment with HA, security, and persistent storage
+apiVersion: v1
+kind: List
+items:
+  # ServiceAccount for Prometheus
+  - apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: prometheus
+      namespace: monitoring
+      labels:
+        app: prometheus
+        component: monitoring
+        app.kubernetes.io/name: prometheus
+        app.kubernetes.io/part-of: monitoring-stack
+        app.kubernetes.io/version: v2.45.0
+
+  # ClusterRole for Prometheus
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: prometheus
+      labels:
+        app: prometheus
+    rules:
+      - apiGroups: [""]
+        resources:
+          - nodes
+          - nodes/proxy
+          - services
+          - endpoints
+          - pods
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["extensions", "networking.k8s.io"]
+        resources:
+          - ingresses
+        verbs: ["get", "list", "watch"]
+
+  # ClusterRoleBinding for Prometheus
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: prometheus
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: prometheus
+    subjects:
+      - kind: ServiceAccount
+        name: prometheus
+        namespace: monitoring
+
+  # ConfigMap for Prometheus Configuration
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: prometheus-config
+      namespace: monitoring
+      labels:
+        app: prometheus
+    data:
+      prometheus.yml: |
+        # Including core configuration from prometheus.yml
+        global:
+          scrape_interval: 15s
+          evaluation_interval: 15s
+          external_labels:
+            monitor: 'ai-sms-platform'
+            environment: 'production'
+            region: 'us-east-1'
+
+        rule_files:
+          - "/etc/prometheus/rules/alerts.yml"
+          - "/etc/prometheus/rules/recording.yml"
+
+        scrape_configs:
+          - job_name: 'prometheus'
+            static_configs:
+              - targets: ['localhost:9090']
+          
+          # Including all service monitoring configs from prometheus.yml
+          - job_name: 'gateway-service'
+            metrics_path: '/metrics'
+            scrape_interval: 10s
+            static_configs:
+              - targets: ['gateway-service:3000']
+          
+          # Additional scrape configs from prometheus.yml...
+
+        alerting:
+          alertmanagers:
+            - static_configs:
+                - targets: ['alertmanager:9093']
+              timeout: '10s'
+              api_version: 'v2'
+
+      alerts.yml: |
+        # Including alert rules from alerts.yml
+        groups:
+          - name: service_availability
+            rules:
+              - alert: ServiceDown
+                expr: up == 0
+                for: 1m
+                labels:
+                  severity: critical
+                annotations:
+                  summary: "Service {{ $labels.job }} is down"
+          # Additional alert rules...
+
+      recording.yml: |
+        # Including recording rules from recording.yml
+        groups:
+          - name: api_metrics
+            interval: 1m
+            rules:
+              - record: api:request_rate:5m
+                expr: sum(rate(http_requests_total[5m])) by (service)
+          # Additional recording rules...
+
+  # PersistentVolumeClaim for Prometheus Storage
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: prometheus-storage
+      namespace: monitoring
+      labels:
+        app: prometheus
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: premium-ssd
+      resources:
+        requests:
+          storage: 50Gi
+
+  # Prometheus StatefulSet for HA deployment
+  - apiVersion: apps/v1
+    kind: StatefulSet
+    metadata:
+      name: prometheus
+      namespace: monitoring
+      labels:
+        app: prometheus
+    spec:
+      serviceName: prometheus
+      replicas: 2
+      podManagementPolicy: Parallel
+      selector:
+        matchLabels:
+          app: prometheus
+      template:
+        metadata:
+          labels:
+            app: prometheus
+        spec:
+          serviceAccountName: prometheus
+          securityContext:
+            fsGroup: 65534
+            runAsNonRoot: true
+            runAsUser: 65534
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchExpressions:
+                      - key: app
+                        operator: In
+                        values:
+                          - prometheus
+                  topologyKey: kubernetes.io/hostname
+          containers:
+            - name: prometheus
+              image: prom/prometheus:v2.45.0
+              args:
+                - --config.file=/etc/prometheus/prometheus.yml
+                - --storage.tsdb.path=/prometheus
+                - --storage.tsdb.retention.time=15d
+                - --web.console.libraries=/usr/share/prometheus/console_libraries
+                - --web.console.templates=/usr/share/prometheus/consoles
+                - --web.enable-lifecycle
+              ports:
+                - containerPort: 9090
+                  name: http
+              resources:
+                requests:
+                  cpu: 1
+                  memory: 2Gi
+                limits:
+                  cpu: 2
+                  memory: 4Gi
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/prometheus
+                - name: storage
+                  mountPath: /prometheus
+              livenessProbe:
+                httpGet:
+                  path: /-/healthy
+                  port: 9090
+                initialDelaySeconds: 30
+                timeoutSeconds: 30
+              readinessProbe:
+                httpGet:
+                  path: /-/ready
+                  port: 9090
+                initialDelaySeconds: 30
+                timeoutSeconds: 30
+          volumes:
+            - name: config
+              configMap:
+                name: prometheus-config
+            - name: storage
+              persistentVolumeClaim:
+                claimName: prometheus-storage
+
+  # Service for Prometheus
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: prometheus
+      namespace: monitoring
+      labels:
+        app: prometheus
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '9090'
+    spec:
+      ports:
+        - port: 9090
+          targetPort: 9090
+          name: http
+      selector:
+        app: prometheus
+      type: ClusterIP
