@@ -1,0 +1,43 @@
+# Kubernetes StorageClass definitions for AI-SMS Lead Platform
+# Version: v1.27
+# Dependencies:
+# - storage.k8s.io/v1 (Kubernetes v1.27)
+# - aws-ebs-csi-driver (v1.x)
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: high-iops-ssd
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+    description: "High-performance GP3 storage optimized for database workloads"
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  iops: "16000"
+  throughput: "1000"
+  encrypted: "true"
+  kmsKeyId: "auto"
+  csi.storage.k8s.io/fstype: ext4
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard-ssd
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+    description: "Standard GP3 storage for general persistent storage needs"
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+  encrypted: "true"
+  kmsKeyId: "auto"
+  csi.storage.k8s.io/fstype: ext4
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
