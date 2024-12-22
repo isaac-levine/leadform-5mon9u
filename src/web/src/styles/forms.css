@@ -1,0 +1,199 @@
+/* forms.css - v1.0.0
+ * Global CSS styles for form-related components
+ * Dependencies: tailwindcss ^3.3.0
+ */
+
+/* Design System Variables */
+:root {
+  /* Colors */
+  --form-primary: #2563EB;
+  --form-secondary: #3B82F6;
+  --form-success: #10B981;
+  --form-error: #EF4444;
+  --form-neutral: #1F2937;
+  --form-border: #E5E7EB;
+  --form-background: #F9FAFB;
+
+  /* Spacing */
+  --form-spacing-base: 4px;
+
+  /* Typography */
+  --form-font-primary: Inter, sans-serif;
+  --form-font-secondary: "SF Pro", sans-serif;
+
+  /* Layout */
+  --form-container-max: 1280px;
+
+  /* Effects */
+  --form-transition: all 0.2s ease-in-out;
+  --form-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --form-radius: 4px;
+}
+
+/* Form Builder Layout */
+.form-builder {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: calc(var(--form-spacing-base) * 6);
+  min-height: calc(100vh - 64px);
+  transition: var(--form-transition);
+  font-family: var(--form-font-primary);
+}
+
+@media (min-width: 768px) {
+  .form-builder {
+    grid-template-columns: 260px 1fr;
+  }
+}
+
+@media (min-width: 1024px) {
+  .form-builder {
+    grid-template-columns: 260px 1fr 300px;
+  }
+}
+
+/* Field Palette */
+.form-field-palette {
+  background: var(--form-background);
+  border-right: 1px solid var(--form-border);
+  padding: calc(var(--form-spacing-base) * 4);
+  overflow-y: auto;
+  height: 100%;
+  position: sticky;
+  top: 0;
+}
+
+.form-field-palette::-webkit-scrollbar {
+  width: 4px;
+}
+
+.form-field-palette::-webkit-scrollbar-thumb {
+  background: var(--form-border);
+  border-radius: var(--form-radius);
+}
+
+/* Form Canvas */
+.form-canvas {
+  background: #FFFFFF;
+  border-radius: var(--form-radius);
+  padding: calc(var(--form-spacing-base) * 6);
+  min-height: 600px;
+  box-shadow: var(--form-shadow);
+  position: relative;
+}
+
+.form-canvas.drag-active {
+  border: 2px dashed var(--form-primary);
+  background: rgba(37, 99, 235, 0.05);
+}
+
+/* Form Fields */
+.form-field {
+  margin-bottom: calc(var(--form-spacing-base) * 4);
+  border: 1px solid var(--form-border);
+  border-radius: var(--form-radius);
+  padding: calc(var(--form-spacing-base) * 3);
+  transition: var(--form-transition);
+  position: relative;
+}
+
+.form-field:hover {
+  border-color: var(--form-secondary);
+}
+
+.form-field:focus-within {
+  border-color: var(--form-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.form-field.error {
+  border-color: var(--form-error);
+}
+
+.form-field.success {
+  border-color: var(--form-success);
+}
+
+/* Field Labels */
+.form-field label {
+  display: block;
+  margin-bottom: calc(var(--form-spacing-base) * 2);
+  font-weight: 500;
+  color: var(--form-neutral);
+}
+
+/* Field Inputs */
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  padding: calc(var(--form-spacing-base) * 2);
+  border: 1px solid var(--form-border);
+  border-radius: var(--form-radius);
+  font-family: var(--form-font-secondary);
+  transition: var(--form-transition);
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: var(--form-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* Error Messages */
+.form-field .error-message {
+  color: var(--form-error);
+  font-size: 0.875rem;
+  margin-top: calc(var(--form-spacing-base) * 2);
+}
+
+/* Help Text */
+.form-field .help-text {
+  color: var(--form-neutral);
+  font-size: 0.875rem;
+  margin-top: calc(var(--form-spacing-base) * 2);
+  opacity: 0.8;
+}
+
+/* Accessibility Enhancements */
+@media (prefers-reduced-motion: reduce) {
+  .form-field,
+  .form-field input,
+  .form-field select,
+  .form-field textarea {
+    transition: none;
+  }
+}
+
+/* High Contrast Mode */
+@media (forced-colors: active) {
+  .form-field {
+    border: 2px solid CanvasText;
+  }
+  
+  .form-field:focus-within {
+    outline: 2px solid Highlight;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --form-background: #111827;
+    --form-border: #374151;
+    --form-neutral: #D1D5DB;
+  }
+
+  .form-canvas {
+    background: #1F2937;
+  }
+
+  .form-field input,
+  .form-field select,
+  .form-field textarea {
+    background: #374151;
+    color: #F9FAFB;
+  }
+}
