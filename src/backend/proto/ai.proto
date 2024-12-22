@@ -1,0 +1,147 @@
+syntax = "proto3";
+
+package ai.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/duration.proto";
+
+// AIService provides AI-powered conversation management and intent classification
+// with enhanced validation, monitoring, and security features
+service AIService {
+  // ProcessMessage analyzes incoming messages and generates appropriate responses
+  // with confidence scoring and performance tracking
+  rpc ProcessMessage(MessageRequest) returns (MessageResponse) {}
+
+  // AnalyzeIntent performs detailed intent classification with confidence scoring
+  // and contextual analysis
+  rpc AnalyzeIntent(IntentRequest) returns (IntentResponse) {}
+}
+
+// MessageDirection defines the flow direction of a message
+enum MessageDirection {
+  // Default unspecified value
+  MESSAGE_DIRECTION_UNSPECIFIED = 0;
+  // Incoming message from lead/customer
+  MESSAGE_DIRECTION_INBOUND = 1;
+  // Outgoing message from system/agent
+  MESSAGE_DIRECTION_OUTBOUND = 2;
+}
+
+// IntentType classifies the purpose or intent of a message
+enum IntentType {
+  // Default unspecified value
+  INTENT_TYPE_UNSPECIFIED = 0;
+  // General inquiry about products/services
+  INTENT_TYPE_INQUIRY = 1;
+  // Questions about pricing/costs
+  INTENT_TYPE_PRICING = 2;
+  // Scheduling or appointment related
+  INTENT_TYPE_SCHEDULE = 3;
+  // Customer complaints or issues
+  INTENT_TYPE_COMPLAINT = 4;
+  // Customer feedback or suggestions
+  INTENT_TYPE_FEEDBACK = 5;
+  // General conversation or greetings
+  INTENT_TYPE_GENERAL = 6;
+  // Urgent or time-sensitive matters
+  INTENT_TYPE_URGENT = 7;
+  // Technical questions or support
+  INTENT_TYPE_TECHNICAL = 8;
+  // Customer support or assistance
+  INTENT_TYPE_SUPPORT = 9;
+}
+
+// MessageRequest contains all information needed to process an incoming message
+message MessageRequest {
+  // Unique identifier for the message
+  string id = 1;
+  // ID of the conversation this message belongs to
+  string conversation_id = 2;
+  // Actual content of the message
+  string content = 3;
+  // Direction of the message (inbound/outbound)
+  MessageDirection direction = 4;
+  // Additional metadata for message processing
+  map<string, string> metadata = 5;
+  // Timestamp when message was received
+  google.protobuf.Timestamp timestamp = 6;
+  // Trace ID for request tracking
+  string trace_id = 7;
+}
+
+// MessageResponse contains the AI-processed response and analysis
+message MessageResponse {
+  // Unique identifier for the response
+  string id = 1;
+  // Generated response content
+  string content = 2;
+  // AI confidence score (0.0 to 1.0)
+  float ai_confidence = 3;
+  // Classified intent of the message
+  IntentType intent = 4;
+  // Indicates if human intervention is needed
+  bool requires_human = 5;
+  // Additional metadata about the response
+  map<string, string> metadata = 6;
+  // Total processing time
+  google.protobuf.Duration processing_time = 7;
+  // Error details if processing failed
+  ErrorDetails error_details = 8;
+}
+
+// IntentRequest contains information needed for intent classification
+message IntentRequest {
+  // ID of the message to analyze
+  string message_id = 1;
+  // Content to analyze
+  string content = 2;
+  // Additional metadata for analysis
+  map<string, string> metadata = 3;
+  // Conversation context for better classification
+  repeated string context = 4;
+  // Trace ID for request tracking
+  string trace_id = 5;
+}
+
+// IntentResponse contains detailed intent analysis results
+message IntentResponse {
+  // Primary classified intent
+  IntentType primary_intent = 1;
+  // Secondary potential intents
+  repeated IntentType secondary_intents = 2;
+  // Detailed confidence scores for each intent
+  repeated IntentConfidence confidence_scores = 3;
+  // Indicates if human intervention is needed
+  bool requires_human = 4;
+  // Total processing time
+  google.protobuf.Duration processing_time = 5;
+  // Error details if analysis failed
+  ErrorDetails error_details = 6;
+}
+
+// IntentConfidence provides detailed confidence scoring for an intent
+message IntentConfidence {
+  // Type of intent being scored
+  IntentType intent_type = 1;
+  // Confidence score (0.0 to 1.0)
+  float confidence_score = 2;
+  // Whether confidence meets threshold
+  bool threshold_met = 3;
+  // Threshold value used
+  float threshold_value = 4;
+  // Factors contributing to confidence score
+  repeated string confidence_factors = 5;
+}
+
+// ErrorDetails provides structured error information
+message ErrorDetails {
+  // Error code
+  int32 code = 1;
+  // Error message
+  string message = 2;
+  // Additional error details
+  map<string, string> details = 3;
+  // Timestamp when error occurred
+  google.protobuf.Timestamp timestamp = 4;
+}
