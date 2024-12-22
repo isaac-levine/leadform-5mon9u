@@ -1,0 +1,199 @@
+# Kubernetes API version: v1.27
+# Purpose: Deploy analytics microservice with security, scalability and monitoring
+# Dependencies: app namespace from ../base/namespaces.yaml
+# Monitoring: Prometheus metrics endpoint exposed on port 9090
+
+apiVersion: v1
+kind: List
+items:
+  # Service Account with minimal permissions
+  - apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: analytics-service
+      namespace: app
+      labels:
+        app.kubernetes.io/name: analytics-service
+        app.kubernetes.io/part-of: ai-sms-lead-platform
+
+  # ConfigMap for environment configuration
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: analytics-config
+      namespace: app
+      labels:
+        app.kubernetes.io/name: analytics-service
+    data:
+      NODE_ENV: "production"
+      PORT: "3000"
+      METRICS_PATH: "/metrics"
+      HEALTH_CHECK_PATH: "/health"
+
+  # Main Deployment
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: analytics-service
+      namespace: app
+      labels:
+        app: analytics-service
+        component: metrics
+        tier: backend
+        app.kubernetes.io/name: analytics-service
+        app.kubernetes.io/part-of: ai-sms-lead-platform
+    spec:
+      replicas: 3
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: 1
+          maxUnavailable: 0
+      selector:
+        matchLabels:
+          app: analytics-service
+      template:
+        metadata:
+          labels:
+            app: analytics-service
+          annotations:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "9090"
+            prometheus.io/path: "/metrics"
+        spec:
+          serviceAccountName: analytics-service
+          securityContext:
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: analytics-service
+              image: analytics-service:latest
+              imagePullPolicy: Always
+              ports:
+                - containerPort: 3000
+                  protocol: TCP
+                  name: http
+                - containerPort: 9090
+                  protocol: TCP
+                  name: metrics
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"
+              livenessProbe:
+                httpGet:
+                  path: /health
+                  port: 3000
+                initialDelaySeconds: 30
+                periodSeconds: 30
+                timeoutSeconds: 5
+                failureThreshold: 3
+              readinessProbe:
+                httpGet:
+                  path: /health
+                  port: 3000
+                initialDelaySeconds: 15
+                periodSeconds: 10
+                timeoutSeconds: 5
+                failureThreshold: 3
+              startupProbe:
+                httpGet:
+                  path: /health
+                  port: 3000
+                initialDelaySeconds: 5
+                periodSeconds: 5
+                failureThreshold: 30
+              envFrom:
+                - configMapRef:
+                    name: analytics-config
+              securityContext:
+                runAsUser: 1000
+                runAsGroup: 1000
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+          affinity:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchExpressions:
+                        - key: app
+                          operator: In
+                          values:
+                            - analytics-service
+                    topologyKey: kubernetes.io/hostname
+
+  # Service for internal communication
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: analytics-service
+      namespace: app
+      labels:
+        app: analytics-service
+        app.kubernetes.io/name: analytics-service
+        app.kubernetes.io/part-of: ai-sms-lead-platform
+    spec:
+      type: ClusterIP
+      ports:
+        - port: 3000
+          targetPort: 3000
+          protocol: TCP
+          name: http
+        - port: 9090
+          targetPort: 9090
+          protocol: TCP
+          name: metrics
+      selector:
+        app: analytics-service
+
+  # Horizontal Pod Autoscaler
+  - apiVersion: autoscaling/v2
+    kind: HorizontalPodAutoscaler
+    metadata:
+      name: analytics-service
+      namespace: app
+      labels:
+        app.kubernetes.io/name: analytics-service
+    spec:
+      scaleTargetRef:
+        apiVersion: apps/v1
+        kind: Deployment
+        name: analytics-service
+      minReplicas: 3
+      maxReplicas: 10
+      metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: Utilization
+              averageUtilization: 70
+        - type: Resource
+          resource:
+            name: memory
+            target:
+              type: Utilization
+              averageUtilization: 80
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+            - type: Pods
+              value: 1
+              periodSeconds: 60
+        scaleUp:
+          stabilizationWindowSeconds: 60
+          policies:
+            - type: Pods
+              value: 2
+              periodSeconds: 30
