@@ -1,0 +1,29 @@
+Format: ICO (Windows Icon)
+Dimensions: Multiple sizes included in single file
+- 16x16 pixels (browser tabs, bookmarks)
+- 32x32 pixels (taskbar, dock, retina displays)
+- 48x48 pixels (desktop shortcuts, high-DPI displays)
+
+Colors:
+- Primary: #2563EB (Brand blue)
+- Background: #FFFFFF (White)
+- Color depth: 32-bit with alpha channel
+
+Design:
+- Simple, recognizable icon representing the AI-SMS Lead Platform
+- High contrast ratio (4.5:1 minimum) for accessibility
+- Clean edges for small size legibility
+- Transparent background support
+- Optimized for both light and dark mode visibility
+
+File Requirements:
+- Maximum file size: 10KB
+- Lossless compression
+- Multiple resolution support
+- Alpha channel transparency
+
+Cache Control Headers:
+Cache-Control: public, max-age=31536000, immutable
+
+The icon should be created using professional icon design software (like Adobe Illustrator or Sketch) 
+and exported using an ICO converter tool that supports multiple resolutions in a single file.
