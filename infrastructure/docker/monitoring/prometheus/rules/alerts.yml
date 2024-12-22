@@ -1,0 +1,128 @@
+# Prometheus Alert Rules v2.45.0
+# Comprehensive monitoring rules for AI-SMS Lead Platform covering:
+# - Service availability and error rates
+# - API performance and response times
+# - Lead engagement metrics
+# - Resource utilization
+
+groups:
+  # Service Health and Availability Monitoring
+  - name: service_availability
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute"
+          runbook_url: "https://wiki.example.com/runbooks/service-down"
+
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) by (job) / sum(rate(http_requests_total[5m])) by (job) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate for {{ $labels.job }}"
+          description: "Service {{ $labels.job }} has error rate above 5% for 2 minutes"
+          runbook_url: "https://wiki.example.com/runbooks/high-error-rate"
+
+  # API Performance Monitoring
+  - name: api_performance
+    rules:
+      - alert: SlowAPIResponse
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow API responses for {{ $labels.job }}"
+          description: "95th percentile of response times for {{ $labels.job }} is above 500ms for 5 minutes"
+          dashboard_url: "https://grafana.example.com/d/api-performance"
+
+      - alert: APILatencySpike
+        expr: rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API latency spike detected for {{ $labels.job }}"
+          description: "Average response time is above 1 second for {{ $labels.job }}"
+
+  # Lead Engagement Metrics
+  - name: lead_engagement
+    rules:
+      - alert: LowLeadResponseRate
+        expr: rate(lead_responses_total{time="1h"}[1h]) / rate(lead_submissions_total[1h]) < 0.8
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low lead response rate"
+          description: "Lead response rate within first hour has fallen below 80% target"
+          dashboard_url: "https://grafana.example.com/d/lead-engagement"
+
+      - alert: LeadSubmissionDrop
+        expr: rate(lead_submissions_total[15m]) < avg_over_time(rate(lead_submissions_total[15m])[1d:]) * 0.5
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Significant drop in lead submissions"
+          description: "Lead submission rate has dropped by 50% compared to 24-hour average"
+
+  # Resource Utilization
+  - name: resource_utilization
+    rules:
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage for {{ $labels.container }}"
+          description: "Container {{ $labels.container }} memory usage above 90% for 5 minutes"
+          runbook_url: "https://wiki.example.com/runbooks/high-memory"
+
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total[5m]) / container_spec_cpu_quota > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage for {{ $labels.container }}"
+          description: "Container {{ $labels.container }} CPU usage above 80% for 5 minutes"
+          runbook_url: "https://wiki.example.com/runbooks/high-cpu"
+
+      - alert: DiskSpaceRunningOut
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space running low on {{ $labels.device }}"
+          description: "Disk usage is above 85% on {{ $labels.device }}"
+
+  # Business KPIs
+  - name: business_metrics
+    rules:
+      - alert: ConversionRateDrop
+        expr: rate(lead_conversions_total[1h]) / rate(lead_submissions_total[1h]) < 0.25
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Conversion rate below target"
+          description: "Lead conversion rate has fallen below 25% target for 30 minutes"
+          dashboard_url: "https://grafana.example.com/d/conversion-metrics"
+
+      - alert: AIConfidenceDrop
+        expr: avg(ai_response_confidence) < 0.7
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low AI confidence scores"
+          description: "Average AI response confidence has fallen below 70% threshold"
