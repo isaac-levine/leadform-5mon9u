@@ -1,0 +1,193 @@
+{
+  "forms": [
+    {
+      "id": "test-form-1",
+      "name": "Contact Information Form",
+      "description": "Lead capture form for collecting contact details",
+      "organizationId": "test-org-1",
+      "fields": [
+        {
+          "id": "name-field",
+          "type": "TEXT",
+          "label": "Full Name",
+          "placeholder": "Enter your full name",
+          "required": true,
+          "validation": [
+            {
+              "type": "MIN_LENGTH",
+              "value": 2,
+              "message": "Name must be at least 2 characters",
+              "isAsync": false,
+              "validatorFn": "minLength"
+            },
+            {
+              "type": "MAX_LENGTH",
+              "value": 100,
+              "message": "Name cannot exceed 100 characters",
+              "isAsync": false,
+              "validatorFn": "maxLength"
+            },
+            {
+              "type": "PATTERN",
+              "value": "^[a-zA-Z\\s]*$",
+              "message": "Name can only contain letters and spaces",
+              "isAsync": false,
+              "validatorFn": "pattern"
+            }
+          ],
+          "visible": true,
+          "metadata": {
+            "ariaLabel": "Full name input field",
+            "ariaDescribedBy": "name-field-help",
+            "role": "textbox"
+          },
+          "version": 1,
+          "isDeleted": false,
+          "createdAt": "2024-01-01T00:00:00.000Z",
+          "updatedAt": "2024-01-01T00:00:00.000Z"
+        },
+        {
+          "id": "email-field",
+          "type": "EMAIL",
+          "label": "Email Address",
+          "placeholder": "Enter your email",
+          "required": true,
+          "validation": [
+            {
+              "type": "EMAIL",
+              "value": true,
+              "message": "Please enter a valid email address",
+              "isAsync": false,
+              "validatorFn": "email"
+            },
+            {
+              "type": "PATTERN",
+              "value": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+              "message": "Invalid email format",
+              "isAsync": false,
+              "validatorFn": "pattern"
+            }
+          ],
+          "visible": true,
+          "metadata": {
+            "ariaLabel": "Email address input field",
+            "ariaDescribedBy": "email-field-help",
+            "role": "textbox"
+          },
+          "version": 1,
+          "isDeleted": false,
+          "createdAt": "2024-01-01T00:00:00.000Z",
+          "updatedAt": "2024-01-01T00:00:00.000Z"
+        },
+        {
+          "id": "phone-field",
+          "type": "PHONE",
+          "label": "Phone Number",
+          "placeholder": "Enter your phone number",
+          "required": true,
+          "validation": [
+            {
+              "type": "PHONE",
+              "value": true,
+              "message": "Please enter a valid phone number",
+              "isAsync": false,
+              "validatorFn": "phone"
+            }
+          ],
+          "visible": true,
+          "metadata": {
+            "ariaLabel": "Phone number input field",
+            "ariaDescribedBy": "phone-field-help",
+            "role": "textbox"
+          },
+          "version": 1,
+          "isDeleted": false,
+          "createdAt": "2024-01-01T00:00:00.000Z",
+          "updatedAt": "2024-01-01T00:00:00.000Z"
+        }
+      ],
+      "styling": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#1F2937",
+        "borderColor": "#E5E7EB",
+        "borderRadius": "8px",
+        "fontSize": "16px",
+        "padding": "16px",
+        "theme": {
+          "mode": "light",
+          "colors": {
+            "primary": "#2563EB",
+            "secondary": "#3B82F6",
+            "success": "#10B981",
+            "error": "#EF4444",
+            "neutral": "#1F2937"
+          },
+          "typography": {
+            "fontFamily": "Inter, sans-serif",
+            "headingSizes": {
+              "h1": "48px",
+              "h2": "32px",
+              "h3": "24px",
+              "h4": "20px",
+              "h5": "16px"
+            },
+            "bodyText": {
+              "large": "18px",
+              "regular": "16px",
+              "small": "14px"
+            }
+          },
+          "spacing": {
+            "base": 4,
+            "scale": [4, 8, 12, 16, 24, 32, 48]
+          }
+        },
+        "responsive": {
+          "320px": {
+            "fontSize": "14px",
+            "padding": "12px"
+          },
+          "768px": {
+            "fontSize": "15px",
+            "padding": "14px"
+          },
+          "1024px": {
+            "fontSize": "16px",
+            "padding": "16px"
+          }
+        }
+      },
+      "settings": {
+        "submitButtonText": "Submit Form",
+        "showProgressBar": true,
+        "enableAutosave": true,
+        "redirectUrl": ""
+      },
+      "integrations": {
+        "analytics": {
+          "enabled": true,
+          "trackingId": "UA-TEST-1"
+        },
+        "crm": {
+          "enabled": false
+        }
+      },
+      "analytics": {
+        "impressions": 0,
+        "submissions": 0,
+        "conversionRate": 0,
+        "averageCompletionTime": 0,
+        "fieldAnalytics": {
+          "enabled": true,
+          "trackFocus": true,
+          "trackErrors": true
+        }
+      },
+      "active": true,
+      "version": "1.0.0",
+      "isDeleted": false,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
