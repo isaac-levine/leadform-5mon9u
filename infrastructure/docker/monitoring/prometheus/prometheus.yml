@@ -1,0 +1,88 @@
+# Prometheus Configuration v2.45.0
+# Main configuration file for monitoring the AI-SMS Lead Platform
+# Implements monitoring requirements for response time (<500ms), 
+# system uptime (99.9%), and comprehensive service metrics
+
+global:
+  # Global settings for all scrape targets
+  scrape_interval: 15s     # Default scrape interval
+  evaluation_interval: 15s # Interval for evaluating rules
+  external_labels:
+    monitor: 'ai-sms-platform'
+    environment: '${ENV:production}'
+    region: '${REGION:us-east-1}'
+
+# Load alert and recording rules
+rule_files:
+  - "rules/alerts.yml"    # Service availability and performance alerts
+  - "rules/recording.yml" # Pre-computed metrics and aggregations
+
+# Scrape configurations for all platform services
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway Service monitoring
+  - job_name: 'gateway-service'
+    metrics_path: '/metrics'
+    scrape_interval: 10s  # More frequent for critical path monitoring
+    static_configs:
+      - targets: ['gateway-service:3000']
+    metric_relabel_configs:
+      - source_labels: ['__name__']
+        regex: 'http_request_duration_seconds.*'
+        action: 'keep'  # Focus on response time metrics
+
+  # Form Service monitoring
+  - job_name: 'form-service'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['form-service:3001']
+    metric_relabel_configs:
+      - source_labels: ['__name__']
+        regex: '(form_submission_duration_seconds.*|form_error_total)'
+        action: 'keep'
+
+  # SMS Service monitoring
+  - job_name: 'sms-service'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['sms-service:3002']
+    metric_relabel_configs:
+      - source_labels: ['__name__']
+        regex: '(sms_delivery_duration_seconds.*|sms_error_total)'
+        action: 'keep'
+
+  # AI Service monitoring
+  - job_name: 'ai-service'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['ai-service:3003']
+    metric_relabel_configs:
+      - source_labels: ['__name__']
+        regex: '(ai_processing_duration_seconds.*|ai_error_total)'
+        action: 'keep'
+
+  # Analytics Service monitoring
+  - job_name: 'analytics-service'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['analytics-service:3004']
+    metric_relabel_configs:
+      - source_labels: ['__name__']
+        regex: '(analytics_query_duration_seconds.*|analytics_error_total)'
+        action: 'keep'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+      timeout: '10s'
+      api_version: 'v2'
