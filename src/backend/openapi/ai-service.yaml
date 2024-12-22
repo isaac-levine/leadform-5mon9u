@@ -1,0 +1,295 @@
+openapi: 3.0.0
+info:
+  title: AI Service API
+  version: 1.0.0
+  description: |
+    AI-powered conversation management and intent classification API with comprehensive monitoring
+    and performance tracking. Provides endpoints for message processing, intent analysis, and
+    response generation with strict performance SLAs (<500ms processing time).
+
+servers:
+  - url: https://api.ai-sms-platform.com/v1
+    description: Production server
+  - url: https://staging-api.ai-sms-platform.com/v1
+    description: Staging server
+
+tags:
+  - name: conversations
+    description: Message processing and conversation management
+  - name: intents
+    description: Intent classification and analysis
+  - name: responses
+    description: AI response generation
+  - name: monitoring
+    description: Performance and health monitoring
+
+paths:
+  /conversations:
+    post:
+      summary: Process conversation message
+      operationId: processMessage
+      tags:
+        - conversations
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessMessageRequest'
+      responses:
+        '200':
+          description: Message processed successfully
+          headers:
+            X-Response-Time:
+              description: AI processing time in milliseconds
+              schema:
+                type: integer
+                maximum: 500
+            X-RateLimit-Remaining:
+              description: Number of requests remaining in time window
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessMessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /intents/analyze:
+    post:
+      summary: Analyze message intent
+      operationId: analyzeIntent
+      tags:
+        - intents
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntentAnalysisRequest'
+      responses:
+        '200':
+          description: Intent analyzed successfully
+          headers:
+            X-Response-Time:
+              $ref: '#/components/headers/ResponseTime'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntentAnalysisResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /responses/generate:
+    post:
+      summary: Generate AI response
+      operationId: generateResponse
+      tags:
+        - responses
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateResponseRequest'
+      responses:
+        '200':
+          description: Response generated successfully
+          headers:
+            X-Response-Time:
+              $ref: '#/components/headers/ResponseTime'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateResponseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    ProcessMessageRequest:
+      type: object
+      required:
+        - messageId
+        - conversationId
+        - content
+        - direction
+      properties:
+        messageId:
+          type: string
+          format: uuid
+          description: Unique identifier for the message
+        conversationId:
+          type: string
+          format: uuid
+          description: ID of the conversation this message belongs to
+        content:
+          type: string
+          description: Message content to process
+          maxLength: 2000
+        direction:
+          type: string
+          enum: [INBOUND, OUTBOUND]
+          description: Message direction
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: Additional message metadata
+        timestamp:
+          type: string
+          format: date-time
+          description: Message timestamp
+
+    ProcessMessageResponse:
+      type: object
+      required:
+        - responseId
+        - content
+        - aiConfidence
+        - intent
+        - processingTime
+      properties:
+        responseId:
+          type: string
+          format: uuid
+          description: Unique identifier for the response
+        content:
+          type: string
+          description: Generated response content
+        aiConfidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: AI confidence score
+        intent:
+          $ref: '#/components/schemas/IntentType'
+        requiresHuman:
+          type: boolean
+          description: Indicates if human intervention is needed
+        processingTime:
+          type: integer
+          description: Processing time in milliseconds
+          maximum: 500
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          description: Additional response metadata
+
+    IntentType:
+      type: string
+      enum:
+        - INQUIRY
+        - PRICING
+        - SCHEDULE
+        - COMPLAINT
+        - FEEDBACK
+        - GENERAL
+        - URGENT
+        - TECHNICAL
+        - SUPPORT
+      description: Types of message intents
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: Error code
+        message:
+          type: string
+          description: Error message
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token
+
+  headers:
+    ResponseTime:
+      description: AI processing time in milliseconds
+      schema:
+        type: integer
+        maximum: 500
+    RateLimitRemaining:
+      description: Number of requests remaining in time window
+      schema:
+        type: integer
+    RequestId:
+      description: Unique request identifier for tracing
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Reset:
+          description: Time when rate limit resets
+          schema:
+            type: integer
+            format: unix-timestamp
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
