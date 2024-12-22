@@ -1,0 +1,107 @@
+# Grafana Datasources Configuration v9.5.0
+# Configures optimized data sources for comprehensive system monitoring and observability
+# with specific settings for performance monitoring and system uptime tracking
+
+apiVersion: 1
+
+# Automatically provision these datasources on Grafana startup
+datasources:
+  # Prometheus datasource configuration
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    version: 1
+    editable: false
+    jsonData:
+      # Optimized scrape interval matching Prometheus config
+      timeInterval: "15s"
+      # Timeout setting for long-running queries
+      queryTimeout: "30s"
+      # Use POST for larger queries
+      httpMethod: "POST"
+      # Enable exemplar support for trace correlation
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: "jaeger"
+      # Performance optimization settings
+      prometheusType: "Prometheus"
+      prometheusVersion: "2.45.0"
+      cacheLevel: "High"
+      disableRecordingRules: false
+      incrementalQueryOverlapWindow: "10m"
+    secureJsonData:
+      # Secure token for Prometheus API authentication
+      httpHeaderValue1: "${PROMETHEUS_API_TOKEN}"
+    # Add HTTP headers for security
+    jsonData:
+      httpHeaders:
+        - name: X-Scope-OrgID
+          value: "1"
+
+  # Jaeger datasource configuration
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger-query:16686
+    isDefault: false
+    version: 1
+    editable: false
+    jsonData:
+      # Enable node graph visualization
+      nodeGraph:
+        enabled: true
+      # Configure trace to logs correlation
+      tracesToLogs:
+        datasourceUid: "prometheus"
+        tags: ["service", "instance", "pod"]
+        mappedTags: [
+          { "key": "service.name", "value": "service" },
+          { "key": "k8s.pod.name", "value": "pod" }
+        ]
+        filterByTraceID: true
+        filterBySpanID: false
+      # Search configuration
+      search:
+        hide: false
+      # Span bar configuration
+      spanBar:
+        type: "duration"
+      # Jaeger API version
+      apiVersion: "v3"
+      # UI customization
+      nodeGraph:
+        enabled: true
+      # Timeout settings
+      queryTimeout: "30s"
+      # Performance settings
+      maxLookback: "24h"
+
+  # Elasticsearch datasource for log aggregation
+  - name: Elasticsearch
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch:9200
+    database: "ai-sms-logs-*"
+    isDefault: false
+    version: 1
+    editable: false
+    jsonData:
+      # Index settings
+      interval: Daily
+      timeField: "@timestamp"
+      esVersion: "8.9.0"
+      maxConcurrentShardRequests: 5
+      logMessageField: "message"
+      logLevelField: "level"
+      # Performance settings
+      timeInterval: "10s"
+      queryTimeout: "30s"
+      # Enable alerting
+      alerting: true
+    secureJsonData:
+      # Elasticsearch authentication
+      basicAuthPassword: "${ELASTICSEARCH_PASSWORD}"
+    basicAuth: true
+    basicAuthUser: "${ELASTICSEARCH_USER}"
