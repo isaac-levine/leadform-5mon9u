@@ -1,0 +1,146 @@
+# Dependabot configuration v2
+# Automated dependency updates for AI-SMS Platform
+version: 2
+updates:
+  # Backend Node.js dependencies
+  - package-ecosystem: "npm"
+    directory: "/src/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    versioning-strategy: "auto"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    groups:
+      typescript-eslint:
+        patterns:
+          - "@typescript-eslint/*"
+      jest:
+        patterns:
+          - "jest"
+          - "@types/jest"
+          - "ts-jest"
+      node-types:
+        patterns:
+          - "@types/node*"
+      nestjs:
+        patterns:
+          - "@nestjs/*"
+      orm:
+        patterns:
+          - "typeorm*"
+          - "sequelize*"
+          - "mongoose*"
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">=6.0.0"]
+      - dependency-name: "node"
+        versions: ["<20.0.0"]
+
+  # Frontend Next.js dependencies
+  - package-ecosystem: "npm"
+    directory: "/src/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    versioning-strategy: "auto"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      mui:
+        patterns:
+          - "@mui/*"
+      testing:
+        patterns:
+          - "@testing-library/*"
+      next-core:
+        patterns:
+          - "next"
+          - "@next/*"
+      sentry:
+        patterns:
+          - "@sentry/*"
+    ignore:
+      - dependency-name: "next"
+        versions: [">=15.0.0"]
+      - dependency-name: "react"
+        versions: [">=19.0.0"]
+
+  # AI Service Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/src/backend/services/ai"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "ai-service"
+      - "security"
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"
+
+  # AI Service Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/src/backend/services/ai"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "python"
+      - "ai-service"
+      - "security"
+    groups:
+      ml-core:
+        patterns:
+          - "torch*"
+          - "tensorflow*"
+          - "langchain*"
+      fastapi-core:
+        patterns:
+          - "fastapi"
+          - "uvicorn"
+          - "pydantic"
+
+  # GitHub Actions workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "security"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
