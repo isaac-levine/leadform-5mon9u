@@ -1,0 +1,226 @@
+# Form Service Kubernetes Configuration
+# Version: 1.0.0
+# Purpose: Production deployment configuration for the Form Service component
+# Dependencies: Requires namespace configuration from ../base/namespaces.yaml
+
+---
+# Form Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: form-service
+  namespace: app
+  labels:
+    app: form-service
+    component: backend
+    tier: application
+    version: "{{ .Values.tag }}"
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3000"
+    prometheus.io/path: "/metrics"
+spec:
+  replicas: 3  # High availability with multiple replicas
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # Zero-downtime deployments
+  selector:
+    matchLabels:
+      app: form-service
+  template:
+    metadata:
+      labels:
+        app: form-service
+        security-context: restricted
+      annotations:
+        seccomp.security.alpha.kubernetes.io/pod: runtime/default
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      # Security Context for enhanced security
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: form-service
+          image: "{{ .Values.ecr }}/form-service:{{ .Values.tag }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+            - containerPort: 9090
+              name: metrics
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            # Secure secrets management
+            - name: DB_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: form-service-secrets
+                  key: db-connection
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          # Comprehensive health checking
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+      # Pod distribution strategy
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - form-service
+                topologyKey: kubernetes.io/hostname
+      # Service account with minimal permissions
+      serviceAccountName: form-service-sa
+      # Node selection for production workloads
+      nodeSelector:
+        environment: production
+        workload-type: application
+
+---
+# Form Service Definition
+apiVersion: v1
+kind: Service
+metadata:
+  name: form-service
+  namespace: app
+  labels:
+    app: form-service
+    component: backend
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    app: form-service
+
+---
+# Horizontal Pod Autoscaling
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: form-service-hpa
+  namespace: app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: form-service
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+---
+# Network Policy for enhanced security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: form-service-network-policy
+  namespace: app
+spec:
+  podSelector:
+    matchLabels:
+      app: form-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              tier: frontend
+        - podSelector:
+            matchLabels:
+              app: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000
+        - protocol: TCP
+          port: 9090
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgresql
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9090
