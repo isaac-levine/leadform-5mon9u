@@ -1,0 +1,208 @@
+name: Frontend CI
+
+# Trigger workflow on push and pull requests to main/develop branches
+# Only run when changes are made to web application files
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/web/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/web/**'
+
+# Environment variables
+env:
+  NODE_VERSION: '20.x'
+  NEXT_TELEMETRY_DISABLED: 1
+  CYPRESS_CACHE_FOLDER: '.cypress-cache'
+  HUSKY: 0 # Disable Husky in CI
+
+jobs:
+  # Quality checks job
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Full history for better analysis
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'src/web/package-lock.json'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            src/web/node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('src/web/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        working-directory: src/web
+        run: npm ci --prefer-offline --no-audit
+
+      - name: TypeScript type checking
+        working-directory: src/web
+        run: npm run type-check
+
+      - name: ESLint check
+        working-directory: src/web
+        run: npm run lint
+        
+      - name: Prettier check
+        working-directory: src/web
+        run: npx prettier --check "**/*.{ts,tsx,css,json,md}"
+
+      - name: Check for circular dependencies
+        working-directory: src/web
+        run: npx madge --circular --extensions ts,tsx .
+
+      - name: Analyze bundle size
+        working-directory: src/web
+        run: npm run bundle-analysis
+
+  # Unit and integration tests job
+  test:
+    name: Unit & Integration Tests
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        shard: [1, 2, 3] # Parallel test execution
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'src/web/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: src/web
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run Jest tests
+        working-directory: src/web
+        run: npm run test -- --coverage --shard=${{ matrix.shard }}/3
+        env:
+          CI: true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report-${{ matrix.shard }}
+          path: src/web/coverage
+          retention-days: 14
+
+  # E2E testing job
+  e2e:
+    name: E2E Tests
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'src/web/package-lock.json'
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.CYPRESS_CACHE_FOLDER }}
+          key: cypress-${{ runner.os }}-${{ hashFiles('src/web/package-lock.json') }}
+
+      - name: Install dependencies
+        working-directory: src/web
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Start Next.js application
+        working-directory: src/web
+        run: |
+          npm run build
+          npm run start & npx wait-on http://localhost:3000
+
+      - name: Run Cypress tests
+        working-directory: src/web
+        run: npm run cypress:headless
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+
+      - name: Upload Cypress artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: cypress-artifacts
+          path: |
+            src/web/cypress/videos
+            src/web/cypress/screenshots
+          retention-days: 14
+
+  # Build verification job
+  build:
+    name: Build Verification
+    needs: [test, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'src/web/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: src/web
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Build application
+        working-directory: src/web
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NODE_ENV: production
+
+      - name: Run lighthouse check
+        working-directory: src/web
+        run: |
+          npm run start & npx wait-on http://localhost:3000
+          npx lighthouse-ci http://localhost:3000 \
+            --performance=90 \
+            --accessibility=90 \
+            --best-practices=90 \
+            --seo=90
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: next-build
+          path: src/web/.next
+          retention-days: 14
