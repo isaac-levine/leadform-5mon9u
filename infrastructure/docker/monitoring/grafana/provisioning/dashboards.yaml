@@ -1,0 +1,108 @@
+# Grafana Dashboard Provisioning Configuration v9.5.0
+# Configures automatic loading and management of dashboards for:
+# - AI Service Metrics
+# - API Service Metrics
+# - Form Service Metrics
+# - SMS Service Metrics
+
+apiVersion: 1
+
+providers:
+  # Default provider handling all service dashboards
+  - name: 'Default'
+    type: 'file'
+    # Allow dashboard updates through UI
+    allowUiUpdates: true
+    # Enable dashboard deletion through UI
+    disableDeletion: false
+    # Update frequency for checking dashboard changes
+    updateIntervalSeconds: 10
+    options:
+      # Path where dashboard JSON files are stored
+      path: /etc/grafana/dashboards
+      # Enable automatic folder creation based on file structure
+      foldersFromFilesStructure: true
+
+    # Default folder settings
+    folder: 'AI-SMS Platform'
+    # Default datasource settings
+    editable: true
+    # Organization where dashboards will be provisioned
+    orgId: 1
+    # Dashboard settings
+    settings:
+      # Remove expired snapshots
+      cleanupProvisioned: true
+      # Version check settings
+      checkVersion: true
+      # Default timezone
+      timezone: 'browser'
+      # Default refresh interval
+      refreshInterval: '10s'
+      # Default time range
+      timeRange:
+        from: 'now-6h'
+        to: 'now'
+
+    # Dashboard matching rules
+    jsonData:
+      # Service-specific dashboard configurations
+      dashboards:
+        - name: 'AI Service Metrics'
+          type: file
+          folder: 'Services'
+          options:
+            path: 'ai-metrics.json'
+          
+        - name: 'API Service Metrics'
+          type: file
+          folder: 'Services'
+          options:
+            path: 'api-metrics.json'
+          
+        - name: 'Form Service Metrics'
+          type: file
+          folder: 'Services'
+          options:
+            path: 'form-metrics.json'
+          
+        - name: 'SMS Service Metrics'
+          type: file
+          folder: 'Services'
+          options:
+            path: 'sms-metrics.json'
+
+      # Default datasource configuration
+      datasources:
+        - name: 'Prometheus'
+          type: 'prometheus'
+          access: 'proxy'
+          url: 'http://prometheus:9090'
+          isDefault: true
+
+      # Alert notification settings
+      alerting:
+        - name: 'Default'
+          type: 'email'
+          settings:
+            addresses: 'alerts@example.com'
+
+      # Dashboard search settings
+      search:
+        hideStarred: false
+        hideRecent: false
+        hideFolders: false
+
+      # Dashboard snapshot settings
+      snapshots:
+        external_enabled: false
+
+      # User settings
+      users:
+        viewers_can_edit: false
+        editors_can_admin: false
+
+      # Security settings
+      security:
+        disableInitialAdminCreation: false
+        adminPassword: '${GRAFANA_ADMIN_PASSWORD}'
