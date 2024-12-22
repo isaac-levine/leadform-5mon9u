@@ -1,0 +1,147 @@
+syntax = "proto3";
+
+package sms;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// Message direction enum for tracking message flow
+enum MessageDirection {
+  INBOUND = 0;
+  OUTBOUND = 1;
+}
+
+// Message delivery status enum for tracking
+enum MessageStatus {
+  QUEUED = 0;
+  SENT = 1;
+  DELIVERED = 2;
+  FAILED = 3;
+}
+
+// Enhanced conversation states including AI and human interaction states
+enum ConversationStatus {
+  ACTIVE = 0;
+  PAUSED = 1;
+  CLOSED = 2;
+  HUMAN_TAKEOVER = 3;
+  AI_PROCESSING = 4;
+  WAITING_RESPONSE = 5;
+}
+
+// Supported SMS providers with generic fallback
+enum SMSProvider {
+  TWILIO = 0;
+  MESSAGEBIRD = 1;
+  GENERIC = 2;
+}
+
+// Enhanced message data structure with AI processing and tracking fields
+message Message {
+  string id = 1;
+  string conversation_id = 2;
+  string content = 3;
+  MessageDirection direction = 4;
+  MessageStatus status = 5;
+  double ai_confidence = 6;
+  map<string, string> metadata = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  string processed_by = 10;  // Agent ID or "AI" for AI-processed messages
+  repeated string tags = 11;
+  int32 retry_count = 12;
+  SMSProvider provider = 13;
+  string provider_message_id = 14;
+}
+
+// Enhanced conversation structure with monitoring and analytics fields
+message Conversation {
+  string id = 1;
+  string lead_id = 2;
+  ConversationStatus status = 3;
+  string phone_number = 4;
+  string assigned_agent = 5;
+  google.protobuf.Timestamp last_activity = 6;
+  map<string, string> metadata = 7;
+  double average_response_time = 8;
+  int32 message_count = 9;
+  bool requires_attention = 10;
+  repeated string tags = 11;
+  bool is_opted_out = 12;
+  double average_ai_confidence = 13;
+}
+
+// Request message for sending SMS
+message SendMessageRequest {
+  string conversation_id = 1;
+  string content = 2;
+  MessageDirection direction = 3;
+  map<string, string> metadata = 4;
+  SMSProvider preferred_provider = 5;
+}
+
+// Request message for retrieving messages
+message GetMessagesRequest {
+  string conversation_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Timestamp end_time = 5;
+}
+
+// Response message for retrieving messages
+message GetMessagesResponse {
+  repeated Message messages = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Request message for updating message status
+message UpdateMessageStatusRequest {
+  string message_id = 1;
+  MessageStatus new_status = 2;
+  string provider_message_id = 3;
+  map<string, string> provider_metadata = 4;
+}
+
+// Request message for updating conversation status
+message UpdateConversationStatusRequest {
+  string conversation_id = 1;
+  ConversationStatus new_status = 2;
+  string assigned_agent = 3;
+  map<string, string> metadata = 4;
+}
+
+// Request message for streaming conversation updates
+message ConversationStreamRequest {
+  repeated string conversation_ids = 1;
+  repeated ConversationStatus status_filter = 2;
+}
+
+// Real-time conversation update message
+message ConversationUpdate {
+  string conversation_id = 1;
+  ConversationStatus status = 2;
+  Message last_message = 3;
+  google.protobuf.Timestamp update_time = 4;
+  string update_type = 5;
+  map<string, string> metadata = 6;
+}
+
+// Enhanced gRPC service interface for SMS functionality with real-time updates
+service SMSService {
+  // Sends a new SMS message with AI processing
+  rpc SendMessage(SendMessageRequest) returns (Message) {}
+
+  // Retrieves paginated messages for a conversation
+  rpc GetMessages(GetMessagesRequest) returns (GetMessagesResponse) {}
+
+  // Updates message delivery status with tracking
+  rpc UpdateMessageStatus(UpdateMessageStatusRequest) returns (Message) {}
+
+  // Updates conversation status including human takeover
+  rpc UpdateConversationStatus(UpdateConversationStatusRequest) returns (Conversation) {}
+
+  // Streams real-time conversation updates
+  rpc StreamConversationUpdates(ConversationStreamRequest) returns (stream ConversationUpdate) {}
+}
