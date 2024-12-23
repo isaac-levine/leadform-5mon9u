@@ -51,7 +51,7 @@
     "libphonenumber-js": "^1.0.0",
     "messagebird": "^4.0.1",
     "mongodb": "^7.0.0",
-    "mongoose": "^7.5.0",
+    "mongoose": "^8.9.2",
     "morgan": "^1.10.0",
     "opossum": "^7.1.0",
     "passport": "^0.6.0",
