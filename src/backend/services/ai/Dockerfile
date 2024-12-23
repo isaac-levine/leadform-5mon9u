@@ -1,7 +1,7 @@
 # -----------------------------
 # Stage 1: Builder
 # -----------------------------
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 # Build arguments
 ARG POETRY_VERSION=1.5.1
@@ -52,7 +52,7 @@ RUN poetry build
 # -----------------------------
 # Stage 2: Runtime
 # -----------------------------
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
