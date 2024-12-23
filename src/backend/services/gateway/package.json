@@ -39,7 +39,7 @@
     "zod": "^3.22.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^17.6.5",
+    "@commitlint/cli": "^19.6.1",
     "@jest/globals": "^29.0.0",
     "@types/bcryptjs": "^2.4.2",
     "@types/bull": "^4.10.0",
